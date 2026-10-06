@@ -1,0 +1,8 @@
+{
+  "name": "@easy-pay/ui",
+  "version": "1.0.0",
+  "main": "./dist/index.js",
+  "react-native": "./src/index.ts",
+  "private": true,
+  "dependencies": {}
+}

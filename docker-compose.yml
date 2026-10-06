@@ -1,0 +1,84 @@
+services:
+  user-service:
+    build:
+      context: ./apps/api-backend
+      dockerfile: Dockerfile
+    container_name: easy-pay-user-service
+    ports:
+      - "8001:8000"
+    volumes:
+      - ./apps/api-backend:/app
+    env_file:
+      - .env
+      - ./apps/api-backend/.env
+    command: uvicorn main_auth:app --host 0.0.0.0 --port 8000
+
+  group-service:
+    build:
+      context: ./apps/api-backend
+      dockerfile: Dockerfile
+    container_name: easy-pay-group-service
+    ports:
+      - "8002:8000"
+    volumes:
+      - ./apps/api-backend:/app
+    env_file:
+      - .env
+      - ./apps/api-backend/.env
+    command: uvicorn main_groups:app --host 0.0.0.0 --port 8000
+
+  stats-service:
+    build:
+      context: ./apps/api-backend
+      dockerfile: Dockerfile
+    container_name: easy-pay-stats-service
+    ports:
+      - "8003:8000"
+    volumes:
+      - ./apps/api-backend:/app
+    env_file:
+      - .env
+      - ./apps/api-backend/.env
+    command: uvicorn main_stats:app --host 0.0.0.0 --port 8000
+
+  ocr-service:
+    build:
+      context: ./apps/api-backend
+      dockerfile: Dockerfile
+    container_name: easy-pay-ocr-service
+    ports:
+      - "8004:8000"
+    volumes:
+      - ./apps/api-backend:/app
+    env_file:
+      - .env
+      - ./apps/api-backend/.env
+    command: uvicorn main_ocr:app --host 0.0.0.0 --port 8000
+
+  notification-service:
+    build:
+      context: ./apps/api-backend
+      dockerfile: Dockerfile
+    container_name: easy-pay-notification-service
+    ports:
+      - "8005:8000"
+    volumes:
+      - ./apps/api-backend:/app
+    env_file:
+      - .env
+      - ./apps/api-backend/.env
+    command: uvicorn main_notification:app --host 0.0.0.0 --port 8000
+
+  wallet-service:
+    build:
+      context: ./apps/api-backend
+      dockerfile: Dockerfile
+    container_name: easy-pay-wallet-service
+    ports:
+      - "8006:8000"
+    volumes:
+      - ./apps/api-backend:/app
+    env_file:
+      - .env
+      - ./apps/api-backend/.env
+    command: uvicorn main_wallet:app --host 0.0.0.0 --port 8000

@@ -1,0 +1,92 @@
+/* ═══ RegisterExpense – Custom styles ═══ */
+
+/* Glass card with top-left highlight */
+.glassCard {
+    background: rgba(30, 41, 59, 0.4);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-top: 1px solid rgba(255, 255, 255, 0.2);
+    border-left: 1px solid rgba(255, 255, 255, 0.2);
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+}
+
+/* Custom dark input */
+.inputDark {
+    background-color: #1e293b;
+    border: 1px solid #334155;
+    color: #e2e8f0;
+    transition: all 0.3s ease;
+}
+
+.inputDark::placeholder {
+    color: #64748b;
+}
+
+.inputDark:focus {
+    border-color: #2196F3;
+    box-shadow: 0 0 0 2px rgba(33, 150, 243, 0.2);
+    outline: none;
+}
+
+/* Primary CTA button */
+.btnPrimary {
+    background: linear-gradient(to right, #2196F3, #1565C0);
+    box-shadow: 0 4px 14px 0 rgba(33, 150, 243, 0.39);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    transition: all 0.2s ease;
+}
+
+.btnPrimary:hover {
+    box-shadow: 0 6px 20px 0 rgba(33, 150, 243, 0.5);
+    transform: translateY(-1px);
+}
+
+.btnPrimary:active {
+    transform: translateY(0);
+}
+
+/* Custom checkbox */
+.checkboxCustom {
+    appearance: none;
+    background-color: #1e293b;
+    margin: 0;
+    font: inherit;
+    color: currentColor;
+    width: 1.25em;
+    height: 1.25em;
+    border: 2px solid #334155;
+    border-radius: 0.35em;
+    display: grid;
+    place-content: center;
+    cursor: pointer;
+    transition: 0.2s all;
+}
+
+.checkboxCustom:checked {
+    background-color: #2196F3;
+    border-color: #2196F3;
+}
+
+.checkboxCustom::before {
+    content: "";
+    width: 0.65em;
+    height: 0.65em;
+    transform: scale(0);
+    transition: 120ms transform ease-in-out;
+    box-shadow: inset 1em 1em white;
+    transform-origin: center;
+    clip-path: polygon(14% 44%, 0 65%, 50% 100%, 100% 16%, 80% 0%, 43% 62%);
+}
+
+.checkboxCustom:checked::before {
+    transform: scale(1);
+}
+
+/* Floating background circles */
+.floatingCircle {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(80px);
+    z-index: 0;
+}

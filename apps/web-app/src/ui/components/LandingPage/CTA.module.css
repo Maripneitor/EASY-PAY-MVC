@@ -1,0 +1,77 @@
+.section {
+    padding: 6rem 1.5rem;
+    background-color: #0A387E;
+    text-align: center;
+}
+
+.container {
+    max-width: 56rem;
+    margin: 0 auto;
+}
+
+.card {
+    background: rgba(13, 71, 161, 0.7);
+    backdrop-filter: blur(16px);
+    padding: 3rem;
+    border-radius: 1.875rem;
+    border: 1px solid rgba(144, 202, 249, 0.3);
+    position: relative;
+    overflow: hidden;
+}
+
+@media (min-width: 768px) {
+    .card {
+        padding: 5rem;
+    }
+}
+
+.topBar {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 0.25rem;
+    background: linear-gradient(to right, var(--cool-sky), white, var(--cool-sky));
+    opacity: 0.5;
+}
+
+.title {
+    font-size: 2.25rem;
+    font-weight: 900;
+    color: white;
+    margin-bottom: 1.5rem;
+    letter-spacing: -0.025em;
+}
+
+@media (min-width: 768px) {
+    .title {
+        font-size: 3rem;
+    }
+}
+
+.desc {
+    font-size: 1.25rem;
+    color: rgba(227, 242, 253, 0.8);
+    margin-bottom: 2.5rem;
+    max-width: 40rem;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.button {
+    background-color: var(--dodger-blue);
+    color: white;
+    padding: 1rem 2.5rem;
+    border-radius: 9999px;
+    font-weight: 700;
+    font-size: 1.125rem;
+    border: none;
+    cursor: pointer;
+    transition: all 0.3s;
+    box-shadow: 0 20px 25px -5px rgba(33, 150, 243, 0.3);
+}
+
+.button:hover {
+    background-color: var(--brilliant-azure);
+    transform: scale(1.05);
+}

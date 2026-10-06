@@ -1,0 +1,38 @@
+.container {
+    padding-top: 2rem;
+}
+
+.header {
+    margin-bottom: 2rem;
+}
+
+.headerContent {
+    flex: 1;
+}
+
+/* Category Colors */
+:root {
+    --cat-color-1: #3b82f6;
+    --cat-color-2: #10b981;
+    --cat-color-3: #a855f7;
+    --cat-color-4: #f59e0b;
+    --cat-color-5: #f43f5e;
+}
+
+/* Custom Scrollbar for the page */
+.container::-webkit-scrollbar {
+    width: 6px;
+}
+
+.container::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.container::-webkit-scrollbar-thumb {
+    background: var(--border-color);
+    border-radius: 10px;
+}
+
+.container::-webkit-scrollbar-thumb:hover {
+    background: var(--text-secondary);
+}

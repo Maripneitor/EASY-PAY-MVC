@@ -1,0 +1,10 @@
+.container {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 2rem;
+  text-align: center;
+  font-family: sans-serif;
+}
+.title {
+  color: #2563eb;
+}

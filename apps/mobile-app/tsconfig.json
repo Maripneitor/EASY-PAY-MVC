@@ -1,0 +1,36 @@
+{
+  "extends": "expo/tsconfig.base",
+  "compilerOptions": {
+    "strict": true,
+    "baseUrl": ".",
+    "paths": {
+      "@/*": [
+        "./*"
+      ],
+      "@easy-pay/domain": [
+        "../../packages/domain/src"
+      ],
+      "@easy-pay/ui": [
+        "../../packages/ui/src"
+      ]
+    },
+    "jsx": "react-native",
+    "lib": [
+      "ESNext"
+    ],
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+
+
+    "skipLibCheck": true,
+    "resolveJsonModule": true,
+    "types": ["nativewind/types"]
+  },
+  "include": [
+    "**/*.ts",
+    "**/*.tsx",
+    ".expo/types/**/*.ts",
+    "expo-env.d.ts",
+    "nativewind-env.d.ts"
+  ]
+}

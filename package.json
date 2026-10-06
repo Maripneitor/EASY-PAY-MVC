@@ -1,0 +1,19 @@
+{
+  "name": "easy-pay",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Monorepo de Easy-Pay",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "install:all": "npm install --force",
+    "mobile": "npm start --workspace=mobile-app",
+    "web": "npm start --workspace=web-app",
+    "api": "npm start --workspace=api-backend"
+  },
+  "devDependencies": {
+    "typescript": "~5.9.2"
+  }
+}

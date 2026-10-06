@@ -1,0 +1,216 @@
+.section {
+    padding: 6rem 1.5rem;
+    background: linear-gradient(180deg, #1565C0 0%, #1E88E5 100%);
+    position: relative;
+}
+
+.container {
+    max-width: 80rem;
+    margin: 0 auto;
+}
+
+.header {
+    text-align: center;
+    margin-bottom: 4rem;
+}
+
+.overline {
+    color: rgba(227, 242, 253, 0.8);
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    font-size: 0.875rem;
+    display: block;
+    margin-bottom: 0.5rem;
+}
+
+.title {
+    font-size: 1.875rem;
+    font-weight: 700;
+    color: white;
+}
+
+@media (min-width: 768px) {
+    .title {
+        font-size: 3rem;
+    }
+}
+
+.grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 2rem;
+}
+
+@media (min-width: 768px) {
+    .grid {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+}
+
+.step {
+    position: relative;
+    z-index: 10;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+}
+
+.numberBadge {
+    width: 5rem;
+    height: 5rem;
+    border-radius: 9999px;
+    background-color: var(--cobalt-blue);
+    border: 4px solid var(--sky-blue);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 2rem;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+    z-index: 20;
+}
+
+.number {
+    font-size: 1.5rem;
+    font-weight: 900;
+    color: white;
+}
+
+.stepTitle {
+    font-size: 1.25rem;
+    font-weight: 700;
+    margin-bottom: 0.75rem;
+    color: white;
+}
+
+.stepDesc {
+    font-size: 0.875rem;
+    color: rgba(227, 242, 253, 0.7);
+    margin-bottom: 1.5rem;
+    padding: 0 1rem;
+}
+
+.mockupScreen {
+    width: 12rem;
+    height: 20rem;
+    background-color: var(--cobalt-blue);
+    border-radius: 1.25rem;
+    border: 4px solid var(--brilliant-azure);
+    overflow: hidden;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+    display: flex;
+    flex-direction: column;
+}
+
+.mockupHeader {
+    background-color: var(--ocean-deep);
+    padding: 0.625rem;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.notch {
+    width: 2.5rem;
+    height: 0.375rem;
+    background-color: rgba(255, 255, 255, 0.2);
+    border-radius: 9999px;
+}
+
+.mockupBody {
+    flex: 1;
+    background-color: rgba(13, 71, 161, 0.9);
+    display: flex;
+    flex-direction: column;
+    padding: 1rem;
+}
+
+.mockupContainer {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+}
+
+.mockupIcon {
+    color: rgba(227, 242, 253, 0.3);
+    position: absolute;
+    inset: 0;
+    margin: auto;
+}
+
+.mockupDashed {
+    width: 100%;
+    height: 100%;
+    border: 2px dashed rgba(144, 202, 249, 0.5);
+    border-radius: 0.5rem;
+}
+
+.mockupDetails {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    padding-top: 0.5rem;
+}
+
+.line1 {
+    height: 0.75rem;
+    width: 100%;
+    background-color: rgba(100, 181, 246, 0.4);
+    border-radius: 0.25rem;
+}
+
+.line2 {
+    height: 0.75rem;
+    width: 75%;
+    background-color: rgba(144, 202, 249, 0.3);
+    border-radius: 0.25rem;
+}
+
+.mockupCalc {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+.calcLabel {
+    font-size: 0.75rem;
+    color: rgba(227, 242, 253, 0.5);
+    margin-bottom: 0.25rem;
+}
+
+.calcValue {
+    font-size: 1.875rem;
+    font-family: monospace;
+    color: #4ade80;
+    /* green-400 */
+    font-weight: 700;
+}
+
+.mockupPay {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    padding-bottom: 1rem;
+}
+
+.payButton {
+    width: 100%;
+    height: 2.5rem;
+    background-color: #22c55e;
+    /* green-500 */
+    border-radius: 0.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: white;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+}

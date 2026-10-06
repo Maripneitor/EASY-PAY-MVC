@@ -1,0 +1,654 @@
+.hero {
+    position: relative;
+    min-height: 100vh;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: radial-gradient(circle at center, #1E88E5 0%, #0D47A1 100%);
+    padding: 8rem 1.5rem 4rem;
+    overflow: hidden;
+}
+
+.gridPattern {
+    position: absolute;
+    inset: 0;
+    background-image:
+        linear-gradient(rgba(144, 202, 249, 0.05) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(144, 202, 249, 0.05) 1px, transparent 1px);
+    background-size: 40px 40px;
+    opacity: 0.3;
+    pointer-events: none;
+}
+
+.dotsPattern {
+    position: absolute;
+    inset: 0;
+    background-image: radial-gradient(rgba(144, 202, 249, 0.1) 1px, transparent 1px);
+    background-size: 20px 20px;
+    opacity: 0.2;
+    pointer-events: none;
+}
+
+.decorativeIcons {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+    pointer-events: none;
+}
+
+.floatIcon1 {
+    position: absolute;
+    top: 25%;
+    left: 10%;
+    width: 8rem;
+    height: 8rem;
+    opacity: 0.4;
+    animation: float1 6s ease-in-out infinite;
+}
+
+.floatIcon2 {
+    position: absolute;
+    bottom: 25%;
+    right: 10%;
+    width: 6rem;
+    height: 6rem;
+    opacity: 0.3;
+    animation: float2 8s ease-in-out infinite;
+}
+
+.glassIcon {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(144, 202, 249, 0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.iconColor {
+    color: rgba(227, 242, 253, 0.5);
+}
+
+.container {
+    position: relative;
+    z-index: 10;
+    display: grid;
+    gap: 4rem;
+    max-width: 80rem;
+    width: 100%;
+}
+
+@media (min-width: 1024px) {
+    .container {
+        grid-template-columns: 1fr 1fr;
+        align-items: center;
+    }
+}
+
+.content {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    text-align: left;
+}
+
+.title {
+    font-size: 3rem;
+    font-weight: 900;
+    line-height: 1.1;
+    letter-spacing: -0.05em;
+    color: white;
+    text-shadow: 0 0 20px rgba(227, 242, 253, 0.4);
+    margin-bottom: 1.5rem;
+}
+
+@media (min-width: 1024px) {
+    .title {
+        font-size: 4.5rem;
+    }
+}
+
+.highlight {
+    background: linear-gradient(to right, #64B5F6, #ffffff);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.subtitle {
+    font-size: 1.25rem;
+    font-weight: 300;
+    line-height: 1.6;
+    color: rgba(227, 242, 253, 0.9);
+    max-width: 36rem;
+    margin-bottom: 2.5rem;
+}
+
+.actions {
+    display: grid;
+    gap: 1.5rem;
+    width: 100%;
+    max-width: 28rem;
+    margin-bottom: 2rem;
+}
+
+@media (min-width: 640px) {
+    .actions {
+        grid-template-columns: 1fr 1fr;
+    }
+}
+
+.actionCard {
+    background: rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(144, 202, 249, 0.4);
+    padding: 1.5rem;
+    border-radius: 1.25rem;
+    display: flex;
+    flex-direction: column;
+    transition: all 0.3s;
+    cursor: pointer;
+}
+
+.actionCard:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+    transform: translateY(-5px);
+}
+
+.cardHeader {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+}
+
+.actionIcon {
+    color: #64B5F6;
+    width: 1.875rem;
+    height: 1.875rem;
+}
+
+.actionIconJoin {
+    color: #a7f3d0;
+    width: 1.875rem;
+    height: 1.875rem;
+}
+
+.actionCard h3 {
+    font-size: 1.125rem;
+    font-weight: 700;
+    color: white;
+}
+
+.actionCard p {
+    font-size: 0.875rem;
+    color: rgba(227, 242, 253, 0.7);
+    margin-bottom: 1.5rem;
+}
+
+.mainCtaBtn {
+    grid-column: span 2;
+    background: white;
+    color: #1E88E5;
+    padding: 1.25rem 2.5rem;
+    border-radius: 1.5rem;
+    font-weight: 900;
+    font-size: 1.125rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    border: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+    cursor: pointer;
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+    width: 100%;
+}
+
+.mainCtaBtn:hover {
+    transform: scale(1.05) translateY(-5px);
+    box-shadow: 0 30px 60px rgba(0, 0, 0, 0.3);
+    background: #f8faff;
+}
+
+.mainCtaBtn:active {
+    transform: scale(0.98);
+}
+
+.mainCtaBtn span {
+    position: relative;
+    z-index: 1;
+}
+
+.hint {
+    background-color: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(144, 202, 249, 0.2);
+    padding: 0.75rem 1.5rem;
+    border-radius: 9999px;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    backdrop-filter: blur(8px);
+}
+
+.hintEmoji {
+    font-size: 1.125rem;
+}
+
+.hint p {
+    font-size: 0.875rem;
+    color: rgba(227, 242, 253, 0.8);
+}
+
+.visuals {
+    position: relative;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 500px;
+    perspective: 1000px;
+}
+
+.glow {
+    position: absolute;
+    inset: 0;
+    background-color: rgba(21, 101, 192, 0.2);
+    filter: blur(80px);
+    border-radius: 50%;
+}
+
+.receiptContainer {
+    position: relative;
+    width: 100%;
+    max-width: 450px;
+    display: flex;
+    justify-content: center;
+}
+
+.receipt {
+    position: relative;
+    width: 12rem;
+    background-color: white;
+    color: #1f2937;
+    border-radius: 0.5rem 0.5rem 0 0;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+    z-index: 20;
+    padding-bottom: 2rem;
+    overflow: hidden;
+    mask-image: linear-gradient(180deg, black 90%, transparent 100%);
+    -webkit-mask-image: radial-gradient(circle at 10px bottom, transparent 10px, black 11px);
+    -webkit-mask-size: 20px 100%;
+    -webkit-mask-position: bottom;
+    -webkit-mask-repeat: repeat-x;
+}
+
+.scanBeam {
+    position: absolute;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background-color: rgba(33, 150, 243, 0.8);
+    box-shadow: 0 0 20px rgba(33, 150, 243, 0.8);
+    z-index: 30;
+    animation: scanBeam 3s ease-in-out infinite;
+}
+
+.scanBeamBlur {
+    position: absolute;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background-color: white;
+    z-index: 30;
+    animation: scanBeam 3s ease-in-out infinite;
+}
+
+.receiptHeader {
+    padding: 1rem;
+    border-bottom: 1px dashed #d1d5db;
+    text-align: center;
+}
+
+.storeIconWrapper {
+    width: 2.5rem;
+    height: 2.5rem;
+    background-color: #f3f4f6;
+    border-radius: 50%;
+    margin: 0 auto 0.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.storeIcon {
+    color: #9ca3af;
+}
+
+.skeletonLine1 {
+    height: 0.375rem;
+    width: 4rem;
+    background-color: #d1d5db;
+    border-radius: 0.125rem;
+    margin: 0 auto 0.25rem;
+}
+
+.skeletonLine2 {
+    height: 0.375rem;
+    width: 6rem;
+    background-color: #e5e7eb;
+    border-radius: 0.125rem;
+    margin: 0 auto;
+}
+
+.receiptContent {
+    padding: 1rem;
+    position: relative;
+}
+
+.receiptTableHead {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.625rem;
+    color: #9ca3af;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 0.75rem;
+}
+
+.receiptItems {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    padding-bottom: 1rem;
+}
+
+.receiptRow {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: #1f2937;
+    opacity: 0.3;
+}
+
+.animatedItems {
+    position: absolute;
+    top: 2.25rem;
+    left: 1rem;
+    right: 1rem;
+    pointer-events: none;
+}
+
+.animItemLeft {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.75rem;
+    font-weight: 700;
+    background-color: white;
+    padding: 0.25rem;
+    border-radius: 0.25rem;
+    border: 1px solid #f3f4f6;
+    animation: itemSeparateLeft 4s ease-out infinite;
+}
+
+.animItemCenter {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.75rem;
+    font-weight: 700;
+    background-color: white;
+    padding: 0.25rem;
+    border-radius: 0.25rem;
+    border: 1px solid #f3f4f6;
+    margin-top: 0.5rem;
+    animation: itemSeparateCenter 4s ease-out infinite;
+    animation-delay: 0.5s;
+}
+
+.animItemRight {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.75rem;
+    font-weight: 700;
+    background-color: white;
+    padding: 0.25rem;
+    border-radius: 0.25rem;
+    border: 1px solid #f3f4f6;
+    margin-top: 0.5rem;
+    animation: itemSeparateRight 4s ease-out infinite;
+    animation-delay: 1s;
+}
+
+.receiptDivider {
+    margin: 0.5rem 0;
+    border-top: 1px dashed #d1d5db;
+}
+
+.receiptTotal {
+    display: flex;
+    justify-content: space-between;
+    font-size: 1.125rem;
+    font-weight: 900;
+    color: #111827;
+}
+
+.qrIconWrapper {
+    margin-top: 1rem;
+    display: flex;
+    justify-content: center;
+}
+
+.qrIcon {
+    color: #e5e7eb;
+}
+
+.mobileAvatars {
+    position: absolute;
+    bottom: 0;
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    padding: 0 1rem;
+    transform: translateY(2rem);
+    z-index: 10;
+}
+
+.avatarCard1 {
+    transform: rotate(-6deg) translateY(1rem);
+}
+
+.avatarCard2 {
+    transform: translateY(-0.5rem);
+    z-index: 20;
+}
+
+.avatarCard3 {
+    transform: rotate(6deg) translateY(1rem);
+}
+
+.phoneFrame {
+    width: 6rem;
+    background-color: #111827;
+    border-radius: 0.75rem;
+    border: 2px solid #374151;
+    padding: 0.25rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+    height: 8rem;
+}
+
+.avatarCircle {
+    width: 2rem;
+    height: 2rem;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 0.75rem;
+    font-weight: 700;
+    margin-bottom: 0.25rem;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.avatarLabel {
+    font-size: 0.625rem;
+    color: #9ca3af;
+}
+
+.avatarValue {
+    font-size: 0.875rem;
+    font-weight: 700;
+    color: white;
+}
+
+.scrollHint {
+    position: absolute;
+    bottom: 2.5rem;
+    left: 50%;
+    transform: translateX(-50%);
+    opacity: 0.4;
+}
+
+.bounce {
+    animation: bounceSubtle 2s ease-in-out infinite;
+}
+
+.arrowDown {
+    font-size: 2rem;
+    color: #E3F2FD;
+}
+
+/* Animations */
+
+@keyframes float1 {
+
+    0%,
+    100% {
+        transform: translateY(0) rotate(0deg);
+    }
+
+    50% {
+        transform: translateY(-20px) rotate(5deg);
+    }
+}
+
+@keyframes float2 {
+
+    0%,
+    100% {
+        transform: translateY(0) rotate(0deg);
+    }
+
+    50% {
+        transform: translateY(15px) rotate(-8deg);
+    }
+}
+
+@keyframes scanBeam {
+    0% {
+        top: -10%;
+        opacity: 0;
+    }
+
+    10% {
+        opacity: 1;
+    }
+
+    90% {
+        opacity: 1;
+    }
+
+    100% {
+        top: 110%;
+        opacity: 0;
+    }
+}
+
+@keyframes itemSeparateLeft {
+
+    0%,
+    40% {
+        transform: translate(0, 0) scale(1);
+        opacity: 0;
+    }
+
+    50% {
+        opacity: 1;
+    }
+
+    100% {
+        transform: translate(-140px, 80px) scale(0.9);
+        opacity: 1;
+    }
+}
+
+@keyframes itemSeparateRight {
+
+    0%,
+    45% {
+        transform: translate(0, 0) scale(1);
+        opacity: 0;
+    }
+
+    55% {
+        opacity: 1;
+    }
+
+    100% {
+        transform: translate(140px, 80px) scale(0.9);
+        opacity: 1;
+    }
+}
+
+@keyframes itemSeparateCenter {
+
+    0%,
+    50% {
+        transform: translate(0, 0) scale(1);
+        opacity: 0;
+    }
+
+    60% {
+        opacity: 1;
+    }
+
+    100% {
+        transform: translate(0, 100px) scale(0.9);
+        opacity: 1;
+    }
+}
+
+@keyframes bounceSubtle {
+
+    0%,
+    100% {
+        transform: translateY(0);
+    }
+
+    50% {
+        transform: translateY(10px);
+    }
+}
+
+/* New Utilities for Avatar Colors */
+.bgPurple {
+    background-color: #a855f7;
+}
+
+.bgBlue {
+    background-color: #3b82f6;
+}
+
+.bgGreen {
+    background-color: #10b981;
+}

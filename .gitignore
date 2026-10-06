@@ -1,0 +1,96 @@
+# Dependencies
+node_modules
+.pnp
+.pnp.js
+
+# Testing
+coverage
+
+# Production
+dist
+build
+
+# Misc
+.DS_Store
+# Local env files, templates, and secrets
+.env
+.env*
+*.env
+*.env*
+env.template
+*.template
+*env-cloud*
+apps/mobile-app/.env*
+apps/api-backend/.env*
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Sensitive files, keys, and credentials
+*.pem
+*.key
+*.cert
+*.crt
+*credential*
+*secret*
+id_rsa*
+
+# AI Skills and Agents
+.agents/
+.agent/
+_agents/
+_agent/
+skills/
+skills-lock.json
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Editor directories and files
+.idea
+.vscode
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Docker
+.dockerignore
+
+# OS generated files
+thumbs.db
+
+# Project Specific
+apps/api-backend/data.json
+.pnpm-store
+.expo
+**/__pycache__/
+**/*.pyc
+_archive_google_dashboard
+
+# Stitch and temporary files
+*stitch*
+stitch/
+stitch_downloads/
+scratch/
+scratch/*
+verify_unach_compliance.py
+test_*.py
+*_test.py
+logs2.txt
+mobile_logs.txt
+*.log
+
+
+# Auditoría Local
+BACKEND_AUDIT.md
+WEB_VIEWS_AUDIT.md
+MOBILE_VIEWS_AUDIT.md
+
+/docs/
+
+*.apk

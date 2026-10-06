@@ -1,0 +1,229 @@
+.section {
+    padding: 6rem 1.5rem;
+    background: linear-gradient(180deg, #1565C0 0%, #1E88E5 100%);
+    position: relative;
+    overflow: hidden;
+}
+
+.container {
+    max-width: 80rem;
+    margin: 0 auto;
+}
+
+.header {
+    text-align: center;
+    margin-bottom: 4rem;
+}
+
+.overline {
+    color: rgba(227, 242, 253, 0.8);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    font-size: 0.875rem;
+    display: block;
+    margin-bottom: 0.5rem;
+}
+
+.heading {
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: white;
+}
+
+@media (min-width: 768px) {
+    .heading {
+        font-size: 3.5rem;
+    }
+}
+
+.grid {
+    display: grid;
+    gap: 2rem;
+}
+
+@media (min-width: 768px) {
+    .grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (min-width: 1024px) {
+    .grid {
+        grid-template-columns: repeat(4, 1fr);
+    }
+}
+
+.step {
+    position: relative;
+    z-index: 10;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+}
+
+.numCircle {
+    width: 5rem;
+    height: 5rem;
+    border-radius: 50%;
+    background-color: #0D47A1;
+    border: 4px solid #90CAF9;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 2rem;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+    z-index: 20;
+}
+
+.numCircle span {
+    font-size: 1.5rem;
+    font-weight: 900;
+    color: white;
+}
+
+.stepTitle {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: white;
+    margin-bottom: 0.75rem;
+}
+
+.stepDesc {
+    font-size: 0.875rem;
+    color: rgba(227, 242, 253, 0.7);
+    margin-bottom: 1.5rem;
+    padding: 0 1rem;
+}
+
+.mockup {
+    position: relative;
+    width: 12rem;
+    height: 20rem;
+    background-color: #0D47A1;
+    border-radius: 1.25rem;
+    border: 4px solid #1E88E5;
+    overflow: hidden;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+    display: flex;
+    flex-direction: column;
+}
+
+.mockupHeader {
+    background-color: #1565C0;
+    padding: 0.625rem;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.mockupNotch {
+    width: 2.5rem;
+    height: 0.375rem;
+    background-color: rgba(255, 255, 255, 0.2);
+    border-radius: 9999px;
+}
+
+.mockupBody {
+    flex: 1;
+    background-color: rgba(13, 71, 161, 0.9);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    padding: 1rem;
+}
+
+.visualIcon {
+    color: rgba(227, 242, 253, 0.3);
+    position: absolute;
+    inset: 0;
+    margin: auto;
+}
+
+.dashedBox {
+    width: 100%;
+    height: 100%;
+    border: 2px dashed rgba(144, 202, 249, 0.5);
+    border-radius: 0.5rem;
+}
+
+.mockupBodyList {
+    flex: 1;
+    background-color: rgba(13, 71, 161, 0.9);
+    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    padding-top: 1.5rem;
+}
+
+.skeletonLine {
+    height: 0.75rem;
+    width: 100%;
+    background-color: rgba(100, 181, 246, 0.4);
+    border-radius: 0.25rem;
+}
+
+.skeletonLineShort {
+    height: 0.75rem;
+    width: 75%;
+    background-color: rgba(144, 202, 249, 0.3);
+    border-radius: 0.25rem;
+}
+
+.skeletonLineMedium {
+    height: 0.75rem;
+    width: 83.3%;
+    background-color: rgba(100, 181, 246, 0.4);
+    border-radius: 0.25rem;
+}
+
+.mockupBodyCalc {
+    flex: 1;
+    background-color: rgba(13, 71, 161, 0.9);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+.calcLabel {
+    font-size: 0.75rem;
+    color: rgba(227, 242, 253, 0.5);
+    margin-bottom: 0.25rem;
+}
+
+.calcValue {
+    font-size: 1.875rem;
+    font-family: monospace;
+    color: #4ade80;
+    font-weight: 700;
+}
+
+.mockupBodyPay {
+    flex: 1;
+    background-color: rgba(13, 71, 161, 0.9);
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    padding: 1rem;
+    padding-bottom: 2rem;
+}
+
+.payBtnMock {
+    width: 100%;
+    height: 2.5rem;
+    background-color: #22c55e;
+    border-radius: 0.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: white;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
+    border: none;
+}

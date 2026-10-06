@@ -1,0 +1,149 @@
+.profilePage {
+    min-height: 100vh;
+    background-color: #0f172a;
+    color: white;
+    display: flex;
+    flex-direction: column;
+}
+
+.mainContent {
+    flex-grow: 1;
+    padding: 2rem 1.5rem;
+    max-width: 42rem;
+    margin: 0 auto;
+    width: 100%;
+    position: relative;
+}
+
+.glow {
+    position: absolute;
+    top: -100px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 100%;
+    height: 300px;
+    background: radial-gradient(circle, rgba(37, 99, 235, 0.15) 0%, transparent 70%);
+    filter: blur(60px);
+    pointer-events: none;
+    z-index: 0;
+}
+
+.profileCard {
+    background: rgba(30, 41, 59, 0.4);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 1.5rem;
+    padding: 2rem;
+    position: relative;
+    z-index: 10;
+    margin-bottom: 2rem;
+}
+
+.headerInfo {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 2.5rem;
+}
+
+.largeAvatarWrapper {
+    width: 6rem;
+    height: 6rem;
+    border-radius: 9999px;
+    background: linear-gradient(135deg, #2078f3 0%, #60a5fa 100%);
+    padding: 3px;
+}
+
+.largeAvatar {
+    width: 100%;
+    height: 100%;
+    border-radius: 9999px;
+    object-fit: cover;
+    background-color: #1e293b;
+    border: 2px solid #0f172a;
+}
+
+.userName {
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: white;
+}
+
+.userEmail {
+    font-size: 0.875rem;
+    color: #94a3b8;
+}
+
+.menuSection {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.menuItem {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1rem 1.25rem;
+    background-color: rgba(30, 41, 59, 0.5);
+    border: 1px solid rgba(51, 65, 85, 0.5);
+    border-radius: 1rem;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.menuItem:hover {
+    background-color: rgba(30, 41, 59, 0.8);
+    border-color: #2078f3;
+    transform: translateX(4px);
+}
+
+.menuItemLeft {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.iconBox {
+    width: 2.5rem;
+    height: 2.5rem;
+    border-radius: 0.75rem;
+    background-color: rgba(32, 120, 243, 0.1);
+    color: #2078f3;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.menuItemTitle {
+    font-size: 1rem;
+    font-weight: 600;
+    color: white;
+}
+
+.menuItemDesc {
+    font-size: 0.75rem;
+    color: #64748b;
+}
+
+.chevron {
+    color: #475569;
+}
+
+.logoutBtn {
+    margin-top: 1rem;
+    width: 100%;
+    padding: 1rem;
+    background-color: rgba(248, 113, 113, 0.1);
+    color: #f87171;
+    border: 1px solid rgba(248, 113, 113, 0.2);
+    border-radius: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.logoutBtn:hover {
+    background-color: rgba(248, 113, 113, 0.2);
+}

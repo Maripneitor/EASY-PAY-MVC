@@ -1,0 +1,17 @@
+{
+  "build": {
+    "preview": {
+      "android": {
+        "buildType": "apk",
+        "image": "latest"
+      },
+      "node": "20.19.4",
+      "env": {
+        "JAVA_VERSION": "17",
+        "NODE_OPTIONS": "--max-old-space-size=1536",
+        "_JAVA_OPTIONS": "-Xmx5g -Xms1g",
+        "NODE_ENV": "production"
+      }
+    }
+  }
+}

@@ -1,0 +1,73 @@
+/* ═══ OCRScanner – Custom styles ═══ */
+
+.glassPanel {
+    background: rgba(30, 41, 59, 0.6);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.viewfinderGrid {
+    background-image:
+        linear-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+    background-size: 40px 40px;
+}
+
+/* Corner brackets for the scanner viewfinder */
+.cornerBracket {
+    position: absolute;
+    width: 40px;
+    height: 40px;
+    border: 4px solid rgba(6, 182, 212, 0.7);
+    z-index: 10;
+}
+
+.cornerTL {
+    top: 20px;
+    left: 20px;
+    border-right: 0;
+    border-bottom: 0;
+    border-top-left-radius: 12px;
+}
+
+.cornerTR {
+    top: 20px;
+    right: 20px;
+    border-left: 0;
+    border-bottom: 0;
+    border-top-right-radius: 12px;
+}
+
+.cornerBL {
+    bottom: 20px;
+    left: 20px;
+    border-right: 0;
+    border-top: 0;
+    border-bottom-left-radius: 12px;
+}
+
+.cornerBR {
+    bottom: 20px;
+    right: 20px;
+    border-left: 0;
+    border-top: 0;
+    border-bottom-right-radius: 12px;
+}
+
+/* Scan line animation */
+.scanLine {
+    animation: scan 3s ease-in-out infinite;
+}
+
+@keyframes scan {
+
+    0%,
+    100% {
+        top: 5%;
+    }
+
+    50% {
+        top: 95%;
+    }
+}

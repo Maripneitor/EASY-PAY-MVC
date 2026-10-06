@@ -1,0 +1,199 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+    /* Brand Colors Originales */
+    --cobalt-blue: #0D47A1;
+    --ocean-deep: #1565C0;
+    --brilliant-azure: #1E88E5;
+    --alice-blue: #E3F2FD;
+    --dodger-blue: #2196F3;
+    --sky-blue: #90CAF9;
+    --cool-sky: #64B5F6;
+    --primary: #2196F3;
+    --neon-violet: #a855f7;
+
+    /* Semantic Colors - Light Mode Default */
+    --bg-body: #E3F2FD;
+    --bg-card: #FFFFFF;
+    --bg-sidebar: #FFFFFF;
+    --text-primary: #0f172a;
+    --text-secondary: #475569;
+    --border-color: #BBDEFB;
+    --glass-bg: rgba(255, 255, 255, 0.7);
+    --header-bg: rgba(255, 255, 255, 0.85);
+    --hover-bg: #f1f5f9;
+
+    /* Input Colors */
+    --input-bg: #FFFFFF;
+    --input-border: #E2E8F0;
+    --input-text: #0F172A;
+}
+
+/* --- 1. MODO OSCURO BASE --- */
+.dark {
+    --bg-body: #0f172a;
+    --bg-card: #1e293b;
+    --bg-sidebar: #0f172a;
+    --text-primary: #f8fafc;
+    --text-secondary: #94a3b8;
+    --border-color: rgba(255, 255, 255, 0.1);
+    --glass-bg: rgba(30, 41, 59, 0.7);
+    --header-bg: rgba(15, 23, 42, 0.8);
+    --hover-bg: rgba(255, 255, 255, 0.05);
+    --primary: #38bdf8;
+    --input-bg: rgba(15, 23, 42, 0.6);
+    --input-border: rgba(255, 255, 255, 0.1);
+    --input-text: #F8FAFC;
+}
+
+/* --- 2. TEMA ROJO (Vibrant) --- */
+.dark.vibrant {
+    --bg-body: #1a0a0a;
+    --bg-card: #2d1212;
+    --bg-sidebar: #1a0a0a;
+    --primary: #f87171;
+    --border-color: rgba(248, 113, 113, 0.2);
+    --header-bg: rgba(26, 10, 10, 0.85);
+}
+
+/* --- 3. TEMA VERDE (Serene) --- */
+.dark.serene {
+    --bg-body: #051a14;
+    --bg-card: #0a2e24;
+    --bg-sidebar: #051a14;
+    --primary: #34d399;
+    --border-color: rgba(52, 211, 153, 0.2);
+    --header-bg: rgba(5, 26, 20, 0.85);
+}
+
+/* --- 4. TEMA TIERRA (Earth) --- */
+.dark.earth {
+    --bg-body: #17120a;
+    --bg-card: #261e12;
+    --bg-sidebar: #17120a;
+    --primary: #fbbf24;
+    --border-color: rgba(251, 191, 36, 0.2);
+    --header-bg: rgba(23, 18, 10, 0.85);
+}
+
+/* --- 5. TEMA ROSA (Pink / Lomecan) --- */
+.dark.pink {
+    --bg-body: #1a0a14;      /* Fondo negro con matiz violeta/rosa */
+    --bg-card: #2d1222;      /* Cards un poco más claras */
+    --bg-sidebar: #1a0a14;
+    --primary: #ff4081;      /* Rosa vibrante */
+    --border-color: rgba(255, 64, 129, 0.2);
+    --header-bg: rgba(26, 10, 20, 0.85);
+}
+
+/* REGLA DE BORDES Y FONDOS ADAPTABLES */
+[class*="rounded-2xl"]:not(button):not(.payment-card) {
+    border: 1.5px solid var(--border-color) !important;
+    background-color: var(--bg-card) !important;
+    transition: all 0.3s ease;
+}
+
+/* Color de Iconos */
+svg:not(.payment-card-icon) {
+    color: var(--primary) !important;
+    transition: color 0.3s ease;
+}
+
+/* CORRECCIÓN FLASH BLANCO: Forzamos el color de fondo desde el HTML */
+html {
+    background-color: var(--bg-body) !important;
+    transition: font-size 0.3s ease-in-out, background-color 0.3s ease;
+}
+
+body {
+    margin: 0;
+    padding: 0;
+    background-color: var(--bg-body);
+    font-family: 'Inter', sans-serif;
+    color: var(--text-primary);
+    overflow-x: hidden;
+    transition: background-color 0.3s ease, color 0.3s ease, font-size 0.3s ease;
+}
+
+/* --- ANIMACIONES MANTENIDAS --- */
+@keyframes float1 { 0%, 100% { transform: translateY(0) rotate(0deg); } 50% { transform: translateY(-20px) rotate(5deg); } }
+@keyframes float2 { 0%, 100% { transform: translateY(0) rotate(0deg); } 50% { transform: translateY(15px) rotate(-8deg); } }
+@keyframes bounceSubtle { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(10px); } }
+@keyframes scan-beam { 0% { top: -10%; opacity: 0; } 10% { opacity: 1; } 90% { opacity: 1; } 100% { top: 110%; opacity: 0; } }
+@keyframes item-separate-left { 0%, 40% { transform: translate(0, 0) scale(1); opacity: 0; } 50% { opacity: 1; } 100% { transform: translate(-140px, 80px) scale(0.9); opacity: 1; } }
+@keyframes item-separate-right { 0%, 45% { transform: translate(0, 0) scale(1); opacity: 0; } 55% { opacity: 1; } 100% { transform: translate(140px, 80px) scale(0.9); opacity: 1; } }
+@keyframes item-separate-center { 0%, 50% { transform: translate(0, 0) scale(1); opacity: 0; } 60% { opacity: 1; } 100% { transform: translate(0, 100px) scale(0.9); opacity: 1; } }
+
+.float-animation-1 { animation: float1 6s ease-in-out infinite; }
+.float-animation-2 { animation: float2 8s ease-in-out infinite; }
+.bounce-subtle { animation: bounceSubtle 2s ease-in-out infinite; }
+.animate-scan-beam { animation: scan-beam 3s ease-in-out infinite; }
+.animate-item-left { animation: item-separate-left 4s ease-out infinite; animation-fill-mode: forwards; }
+.animate-item-right { animation: item-separate-right 4s ease-out infinite; animation-fill-mode: forwards; }
+.animate-item-center { animation: item-separate-center 4s ease-out infinite; animation-fill-mode: forwards; }
+
+/* Limpieza de fondos y textos para temas oscuros y personalizados */
+.dark, .vibrant, .serene, .earth, .pink {
+    [class*="bg-white"]:not(.payment-card), 
+    [class*="bg-slate-"]:not(.payment-card), 
+    [class*="bg-gray-"]:not(.payment-card), 
+    [class*="border-slate-"]:not(.payment-card), 
+    [class*="border-gray-"]:not(.payment-card), 
+    header[class*="header"], 
+    div[class*="bg-gray-50"]:not(.payment-card) {
+        background-color: var(--bg-card) !important;
+        border-color: var(--border-color) !important;
+    }
+
+    [class*="text-slate-"]:not(.payment-card), 
+    [class*="text-gray-"]:not(.payment-card), 
+    [class*="text-zinc-"]:not(.payment-card) {
+        color: var(--text-secondary) !important;
+    }
+
+    h1, h2, h3, h4, span[class*="font-bold"], p[class*="font-bold"] {
+        color: var(--text-primary) !important;
+    }
+}
+
+/* --- 🚀 LÓGICA DE ESCALADO GLOBAL --- */
+html.font-small { font-size: 14px !important; }
+html.font-medium { font-size: 16px !important; }
+html.font-large { font-size: 20px !important; }
+
+/* --- 🛠️ SCROLL ADAPTABLE SOLO EN MODO GRANDE PARA LA CLASE ESPECÍFICA --- */
+html.font-large .custom-scrollbar {
+    overflow-y: auto !important;
+}
+
+/* Estilo de la barra solo para la zona de menú */
+.custom-scrollbar::-webkit-scrollbar {
+    width: 4px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+    background-color: var(--primary);
+    border-radius: 10px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+/* Asegurar que el scroll no atraviese todo el sidebar */
+html.font-large aside {
+    overflow: hidden !important;
+}
+
+/* ═══ Custom Utilities ═══ */
+.no-scrollbar::-webkit-scrollbar {
+    display: none;
+}
+.no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+}

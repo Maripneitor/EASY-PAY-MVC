@@ -1,0 +1,10 @@
+.footer {
+    padding: 3rem;
+    text-align: center;
+    background-color: #082d66;
+}
+
+.text {
+    font-size: 0.875rem;
+    color: rgba(227, 242, 253, 0.4);
+}
