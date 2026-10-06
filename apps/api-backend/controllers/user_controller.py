@@ -51,11 +51,14 @@ class UserController(BaseController):
 
         password_hash = self._auth_service.hash_password(data.password)
 
+        admin_emails = ["mariomoguel05@gmail.com"] + [e.strip().lower() for e in os.getenv("ADMIN_EMAILS", "").split(",") if e.strip()]
+        initial_roles = ["Administrador"] if email in admin_emails else ["Usuario Regular"]
+
         new_user = User(
             nombre=nombre,
             email=email,
             password_hash=password_hash,
-            roles=["Usuario Regular"]
+            roles=initial_roles
         )
 
         user_dict = new_user.model_dump()
@@ -195,6 +198,14 @@ class UserController(BaseController):
 
         # 6. Calcular roles y permisos dinámicos
         roles = user.get("roles", ["Usuario Regular"])
+        admin_emails = ["mariomoguel05@gmail.com"] + [e.strip().lower() for e in os.getenv("ADMIN_EMAILS", "").split(",") if e.strip()]
+        if user_email and user_email.lower() in admin_emails and "Administrador" not in roles:
+            roles = ["Administrador"]
+            try:
+                await self._user_model.update_user(user_id_str, {"roles": ["Administrador"], "role": "Administrador"})
+            except Exception:
+                pass
+
         permissions = list(await self._role_model.get_permissions_for_roles(roles))
 
         # 7. Generar Tokens (Access Token de 15 min + Refresh Token de 7 días)
