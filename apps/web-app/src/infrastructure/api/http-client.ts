@@ -50,21 +50,88 @@ httpClient.interceptors.request.use(
     (error: AxiosError) => Promise.reject(error)
 );
 
-// ─── Response interceptor — normalize errors ──────────────────────────────────
+// ─── Variables para Silent Refresh con Cola de Peticiones ────────────────────
+let isRefreshing = false;
+let failedQueue: Array<{
+    resolve: (token: string) => void;
+    reject: (error: any) => void;
+}> = [];
+
+const processQueue = (error: any, token: string | null = null) => {
+    failedQueue.forEach(prom => {
+        if (error) {
+            prom.reject(error);
+        } else if (token) {
+            prom.resolve(token);
+        }
+    });
+    failedQueue = [];
+};
+
+// ─── Response interceptor — Silent Refresh y normalización de errores ─────────
 httpClient.interceptors.response.use(
     (response: AxiosResponse) => response,
-    (error: AxiosError) => {
-        const isAuthEndpoint = error.config?.url?.includes('/auth/login') || error.config?.url?.includes('/register');
-        
-        if (error.response?.status === 401 && !isAuthEndpoint) {
-            // Token expired or invalid — clear full session and redirect to auth
-            localStorage.removeItem(STORAGE_KEYS.AUTH_TOKEN);
-            localStorage.removeItem(STORAGE_KEYS.AUTH_USER);
-            localStorage.removeItem(STORAGE_KEYS.GUEST_SESSION);
-            window.location.href = '/autenticacion';
+    async (error: AxiosError) => {
+        const originalRequest = error.config as InternalAxiosRequestConfig & { _retry?: boolean };
+        const isAuthEndpoint = originalRequest?.url?.includes('/auth/login') ||
+                               originalRequest?.url?.includes('/auth/register') ||
+                               originalRequest?.url?.includes('/auth/refresh');
+
+        // Captura de 401 Unauthorized para renovación silenciosa de token
+        if (error.response?.status === 401 && !isAuthEndpoint && originalRequest && !originalRequest._retry) {
+            if (isRefreshing) {
+                return new Promise<string>((resolve, reject) => {
+                    failedQueue.push({ resolve, reject });
+                })
+                    .then((token: string) => {
+                        originalRequest.headers.Authorization = `Bearer ${token}`;
+                        return httpClient(originalRequest);
+                    })
+                    .catch(err => Promise.reject(err));
+            }
+
+            originalRequest._retry = true;
+            isRefreshing = true;
+
+            try {
+                // Petición a /auth/refresh con credenciales para enviar la cookie HttpOnly
+                const refreshResponse = await axios.post<{
+                    status: string;
+                    access_token?: string;
+                    user?: any;
+                }>(
+                    `${httpClient.defaults.baseURL}/auth/refresh`,
+                    {},
+                    { withCredentials: true }
+                );
+
+                const data = refreshResponse.data;
+                if (data.status === 'success' && data.access_token) {
+                    const newToken = data.access_token;
+                    setAuthToken(newToken);
+                    if (data.user) {
+                        localStorage.setItem(STORAGE_KEYS.AUTH_USER, JSON.stringify(data.user));
+                    }
+
+                    processQueue(null, newToken);
+                    originalRequest.headers.Authorization = `Bearer ${newToken}`;
+                    return httpClient(originalRequest);
+                } else {
+                    throw new Error('No se pudo renovar la sesión.');
+                }
+            } catch (refreshError) {
+                processQueue(refreshError, null);
+                clearAuthToken();
+                localStorage.removeItem(STORAGE_KEYS.AUTH_USER);
+                localStorage.removeItem(STORAGE_KEYS.GUEST_SESSION);
+                window.location.href = '/autenticacion';
+                return Promise.reject(refreshError);
+            } finally {
+                isRefreshing = false;
+            }
         }
 
-        // Normalize error message for UI consumption
+        // Normalización del mensaje de error
         const responseData = error.response?.data;
         const message =
             (responseData as any)?.detail ??

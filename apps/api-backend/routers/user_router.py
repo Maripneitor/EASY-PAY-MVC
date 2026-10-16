@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, Depends, Request, Response, Cookie
+from fastapi import APIRouter, HTTPException, Depends, Request, Response, Cookie, BackgroundTasks
 from typing import Dict, Any, Optional
 from pydantic import BaseModel
 
@@ -23,9 +23,9 @@ async def ping():
     return {"status": "ok", "message": "Pong from Easy-Pay Auth Service (MVC + POO)"}
 
 @user_router.post("/register", dependencies=[Depends(auth_rate_limiter)])
-async def register(user_data: UserCreate, request: Request):
+async def register(user_data: UserCreate, request: Request, background_tasks: BackgroundTasks):
     ip, ua = get_client_info(request)
-    result = await controller.register(user_data, ip_address=ip, user_agent=ua)
+    result = await controller.register(user_data, ip_address=ip, user_agent=ua, background_tasks=background_tasks)
     if controller.is_error(result):
         status_code = 409 if result.get("error_code") == "USER_EXISTS" else 400
         raise HTTPException(status_code=status_code, detail=result.get("message"))
@@ -142,13 +142,17 @@ async def update_user_compat(user_id: str, data: UserUpdate, auth_user_id: str =
     return result
 
 @user_router.post("/2fa/setup/{user_id}")
-async def setup_2fa(user_id: str, current_user_id: str = Depends(get_current_user_id)):
+async def setup_2fa(
+    user_id: str,
+    background_tasks: BackgroundTasks,
+    current_user_id: str = Depends(get_current_user_id)
+):
     if user_id != current_user_id:
         raise HTTPException(status_code=403, detail="No autorizado")
     profile = await controller.get_profile(user_id)
     if not profile:
         raise HTTPException(status_code=404, detail="Usuario no encontrado")
-    result = await controller.setup_2fa(user_id, profile["email"])
+    result = await controller.setup_2fa(user_id, profile["email"], background_tasks=background_tasks)
     return result
 
 @user_router.post("/2fa/verify/{user_id}")
@@ -174,9 +178,13 @@ async def verify_2fa(user_id: str, data: dict, request: Request, response: Respo
     return result
 
 @user_router.post("/request-password-reset", dependencies=[Depends(auth_rate_limiter)])
-async def request_password_reset(data: PasswordResetRequest, request: Request):
+async def request_password_reset(
+    data: PasswordResetRequest,
+    request: Request,
+    background_tasks: BackgroundTasks
+):
     ip, _ = get_client_info(request)
-    result = await controller.request_password_reset(data.email, ip_address=ip)
+    result = await controller.request_password_reset(data.email, ip_address=ip, background_tasks=background_tasks)
     return result
 
 @user_router.post("/change-password/{user_id}", dependencies=[Depends(auth_rate_limiter)])

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Plus, Search, Users, Filter, LayoutGrid, List as ListIcon, Trash2, X } from 'lucide-react';
+import { Plus, Search, Users, Filter, LayoutGrid, List as ListIcon, Trash2, X, Pencil } from 'lucide-react';
 import { PageHeader } from '@ui/components/PageHeader';
 import { useOutletContext } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -81,6 +81,12 @@ export const GroupsPage: React.FC = () => {
         setEditingGroup(group);
     };
 
+    const userRoles = (user?.roles || ['Usuario Regular']).map((r: string) => r.toLowerCase());
+    const isAdminUser = userRoles.includes('administrador') || userRoles.includes('admin');
+    const isEditorUser = userRoles.includes('editor');
+    const userPermissions = user?.permissions || [];
+    const canWriteGroups = isAdminUser || isEditorUser || userPermissions.includes('groups:write');
+
     return (
         <div className="min-h-screen bg-[var(--bg-body)] pb-20 font-display">
             <PageHeader
@@ -88,9 +94,6 @@ export const GroupsPage: React.FC = () => {
                 subtitle="Gestiona tus cuentas compartidas"
                 onMenuClick={toggleSidebar}
             />
-
-
-
 
             <main className="max-w-[1600px] mx-auto px-4 py-8 md:px-8 space-y-8">
                 {/* Tabs */}
@@ -106,8 +109,8 @@ export const GroupsPage: React.FC = () => {
                                 if (isSelectionMode) toggleSelectionMode();
                             }}
                             className={cn(
-                                "pb-4 text-xs font-black uppercase tracking-[0.2em] relative transition-colors",
-                                activeTab === tab.id ? "text-[var(--primary)]" : "text-slate-400 hover:text-slate-600"
+                                "pb-4 text-xs font-black uppercase tracking-[0.2em] relative transition-colors duration-200",
+                                activeTab === tab.id ? "text-[var(--primary)]" : "text-slate-400 hover:text-slate-900 dark:hover:text-white"
                             )}
                         >
                             <span className="flex items-center gap-2">
@@ -117,7 +120,11 @@ export const GroupsPage: React.FC = () => {
                                 </span>
                             </span>
                             {activeTab === tab.id && (
-                                <motion.div layoutId="activeGroupTab" className="absolute bottom-0 left-0 right-0 h-1 bg-[var(--primary)] rounded-full" />
+                                <motion.div 
+                                    layoutId="activeGroupTab" 
+                                    className="absolute bottom-0 left-0 right-0 h-1 bg-[var(--primary)] rounded-full" 
+                                    transition={{ type: "spring", stiffness: 500, damping: 35 }}
+                                />
                             )}
                         </button>
                     ))}
@@ -138,7 +145,7 @@ export const GroupsPage: React.FC = () => {
                             <div className="h-4 w-px bg-white/20" />
                             <button
                                 onClick={deleteSelectedGroups}
-                                className="flex items-center gap-2 text-rose-400 hover:text-rose-300 transition-colors text-xs font-black uppercase tracking-widest"
+                                className="flex items-center gap-2 text-rose-400 hover:text-rose-300 active:text-rose-500 transition-colors duration-200 text-xs font-black uppercase tracking-widest"
                             >
                                 <Trash2 size={16} /> Eliminar
                             </button>
@@ -161,12 +168,21 @@ export const GroupsPage: React.FC = () => {
                         </div>
 
                         <div className="flex items-center gap-2 w-full md:w-auto">
-                            <button
-                                onClick={() => setIsCreateModalOpen(true)}
-                                className="flex-1 md:flex-none flex items-center justify-center gap-2 px-6 py-3 bg-[var(--primary)] text-white rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-xl shadow-[var(--primary)]/20 hover:scale-105 active:scale-95 transition-all"
-                            >
-                                <Plus size={16} /> Nuevo
-                            </button>
+                            {canWriteGroups ? (
+                                <button
+                                    onClick={() => setIsCreateModalOpen(true)}
+                                    className="flex-1 md:flex-none flex items-center justify-center gap-2 px-6 py-3 bg-[var(--primary)] text-white rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-xl shadow-[var(--primary)]/20 transition-all duration-200 hover:scale-105 hover:shadow-md active:scale-95"
+                                >
+                                    <Plus size={16} /> Nuevo Grupo
+                                </button>
+                            ) : (
+                                <button
+                                    onClick={() => navigate(`${ROUTES.CREATE_GROUP}?tab=join`)}
+                                    className="flex-1 md:flex-none flex items-center justify-center gap-2 px-6 py-3 border border-slate-300 dark:border-slate-700 bg-transparent hover:bg-slate-50 dark:hover:bg-white/5 active:bg-slate-100 dark:active:bg-white/10 active:border-slate-400 dark:active:border-slate-500 text-slate-700 dark:text-slate-300 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-colors duration-200"
+                                >
+                                    <Users size={16} /> Unirse a Grupo
+                                </button>
+                            )}
                         </div>
                     </div>
 
@@ -174,26 +190,26 @@ export const GroupsPage: React.FC = () => {
                         <button
                             onClick={toggleSelectionMode}
                             className={cn(
-                                "flex items-center gap-2 px-6 py-3 border rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all",
+                                "flex items-center gap-2 px-6 py-3 border rounded-2xl text-[10px] font-black uppercase tracking-widest transition-colors duration-200",
                                 isSelectionMode 
-                                    ? "bg-slate-800 text-white border-slate-800 shadow-xl" 
-                                    : "bg-white border-[var(--border-color)] text-slate-600 hover:border-slate-400"
+                                    ? "bg-slate-800 text-white border-slate-800 shadow-xl active:bg-slate-900" 
+                                    : "bg-transparent hover:bg-slate-50 dark:hover:bg-white/5 active:bg-slate-100 dark:active:bg-white/10 active:border-slate-400 dark:active:border-slate-500 border-[var(--border-color)] text-slate-600 dark:text-slate-300"
                             )}
                         >
-                            {isSelectionMode ? <X size={16} /> : <Trash2 size={16} />}
+                            {isSelectionMode ? <X size={16} /> : <Pencil size={16} />}
                             {isSelectionMode ? "Cerrar" : "Editar"}
                         </button>
 
                         <div className="flex bg-[var(--bg-body)] p-1 rounded-xl border border-[var(--border-color)]">
                             <button 
                                 onClick={() => setViewMode('grid')}
-                                className={`p-2 rounded-lg transition-all ${viewMode === 'grid' ? 'bg-[var(--primary)] text-white shadow-md' : 'text-slate-400 hover:text-slate-600'}`}
+                                className={`p-2 rounded-lg transition-all ${viewMode === 'grid' ? 'bg-[var(--primary)] text-white shadow-md' : 'text-slate-400 hover:text-slate-600 transition-opacity duration-200 opacity-70 hover:opacity-100'}`}
                             >
                                 <LayoutGrid size={16} />
                             </button>
                             <button 
                                 onClick={() => setViewMode('list')}
-                                className={`p-2 rounded-lg transition-all ${viewMode === 'list' ? 'bg-[var(--primary)] text-white shadow-md' : 'text-slate-400 hover:text-slate-600'}`}
+                                className={`p-2 rounded-lg transition-all ${viewMode === 'list' ? 'bg-[var(--primary)] text-white shadow-md' : 'text-slate-400 hover:text-slate-600 transition-opacity duration-200 opacity-70 hover:opacity-100'}`}
                             >
                                 <ListIcon size={16} />
                             </button>
@@ -250,15 +266,40 @@ export const GroupsPage: React.FC = () => {
                                 <motion.div 
                                     initial={{ opacity: 0 }}
                                     animate={{ opacity: 1 }}
-                                    className="col-span-full py-32 text-center border-4 border-dashed border-[var(--border-color)] rounded-[4rem] opacity-30"
+                                    className="col-span-full py-24 text-center border-2 border-dashed border-[var(--border-color)] rounded-[3rem] bg-[var(--bg-card)]/40 p-8 space-y-4"
                                 >
-                                    <Users size={64} className="mx-auto mb-6" />
-                                    <h3 className="text-xl font-black uppercase tracking-widest">No hay nada aquí</h3>
-                                    <p className="mt-2 text-sm font-bold opacity-60">
+                                    <div className="w-16 h-16 rounded-full bg-[var(--primary)]/10 text-[var(--primary)] flex items-center justify-center mx-auto mb-2">
+                                        <Users size={32} />
+                                    </div>
+                                    <h3 className="text-lg font-black uppercase tracking-widest text-[var(--text-primary)]">
                                         {activeTab === 'activos' 
-                                            ? "No se encontraron grupos activos." 
-                                            : "No tienes grupos eliminados recientemente."}
+                                            ? (searchTerm ? "Sin resultados de búsqueda" : "No tienes grupos activos") 
+                                            : "No tienes grupos eliminados"}
+                                    </h3>
+                                    <p className="text-xs font-bold text-slate-400 max-w-sm mx-auto">
+                                        {activeTab === 'activos' 
+                                            ? (searchTerm ? "Prueba con otro término de búsqueda." : (canWriteGroups ? "Comienza creando tu primer grupo para dividir gastos y coordinar pagos." : "Únete a un grupo usando el código compartido por tu administrador."))
+                                            : "Los grupos eliminados aparecerán aquí para referencia histórica."}
                                     </p>
+                                    {activeTab === 'activos' && !searchTerm && (
+                                        <div className="pt-2">
+                                            {canWriteGroups ? (
+                                                <button
+                                                    onClick={() => setIsCreateModalOpen(true)}
+                                                    className="inline-flex items-center gap-2 px-6 py-3 bg-[var(--primary)] text-white rounded-2xl text-xs font-black uppercase tracking-widest shadow-xl shadow-[var(--primary)]/20 hover:scale-105 active:scale-95 transition-all"
+                                                >
+                                                    <Plus size={16} /> Crear Primer Grupo
+                                                </button>
+                                            ) : (
+                                                <button
+                                                    onClick={() => navigate(`${ROUTES.CREATE_GROUP}?tab=join`)}
+                                                    className="inline-flex items-center gap-2 px-6 py-3 bg-[var(--primary)] text-white rounded-2xl text-xs font-black uppercase tracking-widest shadow-xl shadow-[var(--primary)]/20 hover:scale-105 active:scale-95 transition-all"
+                                                >
+                                                    <Users size={16} /> Unirse a un Grupo
+                                                </button>
+                                            )}
+                                        </div>
+                                    )}
                                 </motion.div>
                             )}
                         </AnimatePresence>

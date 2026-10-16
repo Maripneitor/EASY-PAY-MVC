@@ -27,6 +27,10 @@ export default defineConfig({
         target: isDocker ? 'http://user-service:8000' : 'http://localhost:8001',
         changeOrigin: true,
       },
+      '/api/admin': {
+        target: isDocker ? 'http://user-service:8000' : 'http://localhost:8001',
+        changeOrigin: true,
+      },
       '/api/groups': {
         target: isDocker ? 'http://group-service:8000' : 'http://localhost:8002',
         changeOrigin: true,

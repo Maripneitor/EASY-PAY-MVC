@@ -10,6 +10,7 @@ export const CreateGroup = () => {
     const {
         activeTab,
         setActiveTab,
+        canWriteGroups,
         groupName,
         setGroupName,
         groupDesc,
@@ -33,30 +34,39 @@ export const CreateGroup = () => {
 
             <main className="max-w-xl mx-auto px-6 py-8 space-y-8">
                 {/* Selector de Modo */}
-                <div className="flex p-1.5 bg-[var(--bg-card)] rounded-2xl border border-[var(--border-color)] shadow-inner">
-                    <button
-                        onClick={() => setActiveTab('crear')}
-                        className={cn(
-                            "flex-1 py-3 rounded-xl text-xs font-black transition-all tracking-widest",
-                            activeTab === 'crear'
-                                ? "bg-[var(--primary)] text-white shadow-lg"
-                                : "text-[var(--text-secondary)] opacity-50"
-                        )}
-                    >
-                        CREAR
-                    </button>
-                    <button
-                        onClick={() => setActiveTab('unirse')}
-                        className={cn(
-                            "flex-1 py-3 rounded-xl text-xs font-black transition-all tracking-widest",
-                            activeTab === 'unirse'
-                                ? "bg-[var(--primary)] text-white shadow-lg"
-                                : "text-[var(--text-secondary)] opacity-50"
-                        )}
-                    >
-                        UNIRSE
-                    </button>
-                </div>
+                {canWriteGroups ? (
+                    <div className="flex p-1.5 bg-[var(--bg-card)] rounded-2xl border border-[var(--border-color)] shadow-inner">
+                        <button
+                            onClick={() => setActiveTab('crear')}
+                            className={cn(
+                                "flex-1 py-3 rounded-xl text-xs font-black transition-all tracking-widest",
+                                activeTab === 'crear'
+                                    ? "bg-[var(--primary)] text-white shadow-lg"
+                                    : "text-[var(--text-secondary)] opacity-50"
+                            )}
+                        >
+                            CREAR
+                        </button>
+                        <button
+                            onClick={() => setActiveTab('unirse')}
+                            className={cn(
+                                "flex-1 py-3 rounded-xl text-xs font-black transition-all tracking-widest",
+                                activeTab === 'unirse'
+                                    ? "bg-[var(--primary)] text-white shadow-lg"
+                                    : "text-[var(--text-secondary)] opacity-50"
+                            )}
+                        >
+                            UNIRSE
+                        </button>
+                    </div>
+                ) : (
+                    <div className="bg-blue-500/10 border border-blue-500/20 rounded-2xl p-4 flex gap-3 text-left">
+                        <Info className="text-blue-600 shrink-0 mt-0.5" size={18} />
+                        <p className="text-[12px] text-blue-700 dark:text-blue-300 font-bold leading-tight">
+                            Tu cuenta tiene permisos de Usuario Regular. Puedes unirte a grupos existentes ingresando el código de 8 dígitos provisto por un administrador.
+                        </p>
+                    </div>
+                )}
 
                 {activeTab === 'crear' ? (
                     /* SECCIÓN CREAR */

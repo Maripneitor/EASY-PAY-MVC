@@ -12,21 +12,38 @@ import {
     Clock, 
     BarChart3, 
     ArrowUpRight, 
-    ReceiptText 
+    ReceiptText,
+    UserPlus,
+    Check
 } from 'lucide-react';
 import { cn, toTitleCase } from '@infrastructure/utils';
+import { ROUTES } from '@infrastructure/routes';
 import { PageHeader } from '@ui/components/PageHeader/PageHeader';
 import { GroupCard } from './components/GroupCard';
 import { TwoFactorModal } from '@ui/components/Security/TwoFactorModal';
 import { generateFinancialReport } from '@infrastructure/services/PdfService';
 
-// ─── Componentes de UI Internos ──────────────────────────────────────────────
+// ─── Componente Skeleton Profesional de Carga ────────────────────────────────
 const DashboardSkeleton: React.FC = () => {
     return (
-        <div className="grid gap-4 md:grid-cols-1 lg:grid-cols-2">
-            <div className="animate-pulse rounded-2xl bg-slate-200/50 dark:bg-slate-800/50 p-6 h-32" />
-            <div className="animate-pulse rounded-2xl bg-slate-200/50 dark:bg-slate-800/50 p-6 h-32" />
-            <div className="animate-pulse rounded-2xl bg-slate-200/50 dark:bg-slate-800/50 p-6 h-32" />
+        <div className="space-y-6 animate-pulse">
+            <div className="grid gap-6 grid-cols-1 md:grid-cols-2">
+                {[1, 2, 3, 4].map((i) => (
+                    <div key={i} className="rounded-3xl bg-[var(--bg-card)] border border-[var(--border-color)] p-6 h-48 flex flex-col justify-between">
+                        <div className="flex items-center gap-4">
+                            <div className="w-12 h-12 rounded-2xl bg-slate-200 dark:bg-slate-800" />
+                            <div className="space-y-2 flex-1">
+                                <div className="h-4 bg-slate-200 dark:bg-slate-800 rounded-lg w-3/4" />
+                                <div className="h-3 bg-slate-200 dark:bg-slate-800 rounded-lg w-1/2" />
+                            </div>
+                        </div>
+                        <div className="flex justify-between items-end pt-4 border-t border-[var(--border-color)]">
+                            <div className="h-3 bg-slate-200 dark:bg-slate-800 rounded-lg w-20" />
+                            <div className="h-6 bg-slate-200 dark:bg-slate-800 rounded-lg w-24" />
+                        </div>
+                    </div>
+                ))}
+            </div>
         </div>
     );
 };
@@ -48,6 +65,7 @@ const I18N_TEXTS = {
         JOIN_GROUP: 'Unirse a Grupo',
         VIEW_ALL: 'Ver todos',
         CREATE_FIRST: 'Crear el primero',
+        JOIN_FIRST: 'Unirse a un Grupo',
         UPLOAD_FILE: 'Subir Archivo',
         EXPORT_PDF: 'Exportar Reporte (PDF)'
     },
@@ -63,7 +81,7 @@ const I18N_TEXTS = {
     },
     OCR_CARD: {
         TITLE: '¿Tienes un Ticket?',
-        DESCRIPTION: 'Súbelo ahora y deja que la IA desglosé los gastos por ti en segundos.'
+        DESCRIPTION: 'Súbelo ahora y deja que la IA desglose los gastos por ti en segundos.'
     },
     DELETE_MODAL: {
         TITLE: 'Eliminar Grupo',
@@ -101,9 +119,15 @@ export const Dashboard: React.FC = () => {
     } = useDashboard();
 
     const { user } = useAuthContext();
-    const userName = user?.nombre || I18N_TEXTS.PLACEHOLDERS.USER;
     
-    const welcomeTitle = `${I18N_TEXTS.WELCOME_PREFIX} ${toTitleCase(userName)}`;
+    // Extraer el primer nombre o la porcion previa al @ en el email y capitalizar
+    const rawName = user?.nombre?.trim() || (user?.email ? user.email.split('@')[0] : '') || I18N_TEXTS.PLACEHOLDERS.USER;
+    const cleanFirstName = rawName.replace(/[._-]/g, ' ').trim().split(' ')[0] || I18N_TEXTS.PLACEHOLDERS.USER;
+    const capitalizedFirstName = cleanFirstName.charAt(0).toUpperCase() + cleanFirstName.slice(1).toLowerCase();
+    const welcomeTitle = `${I18N_TEXTS.WELCOME_PREFIX} ${capitalizedFirstName}`;
+    
+    const userRoles = (user?.roles || ['Usuario Regular']).map((r: string) => r.toLowerCase());
+    const canCreateGroup = userRoles.includes('administrador') || userRoles.includes('admin') || userRoles.includes('editor') || (user?.permissions || []).includes('groups:write');
 
     const getAppearance = (name: string) => {
         const hash = name.split('').reduce((acc, char) => char.charCodeAt(0) + acc, 0);
@@ -144,12 +168,12 @@ export const Dashboard: React.FC = () => {
                         
                         {/* --- DASHBOARD STATS (Expanded Desktop View) --- */}
                         <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                            <div className="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-3xl p-6 shadow-sm hover:shadow-md transition-shadow">
-                                <div className="flex justify-between items-start mb-4">
-                                    <div className="p-3 bg-blue-500/10 rounded-2xl text-blue-500">
+                            <div className="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-3xl p-6 shadow-sm">
+                                <div className="flex justify-between items-start gap-4 mb-5">
+                                    <div className="p-3 bg-blue-500/10 rounded-2xl text-blue-500 shrink-0">
                                         <Wallet size={24} />
                                     </div>
-                                    <span className="text-[10px] font-black uppercase tracking-widest text-emerald-500 flex items-center gap-1 bg-emerald-500/10 px-2 py-1 rounded-full">
+                                    <span className="text-[10px] font-black uppercase tracking-widest text-emerald-500 flex items-center gap-1.5 bg-emerald-500/10 px-3 py-1.5 rounded-full shrink-0 ml-auto shadow-sm">
                                         <TrendingUp size={12} /> {stats?.groups_count || 0} {I18N_TEXTS.STATS.GROUPS_LABEL}
                                     </span>
                                 </div>
@@ -157,49 +181,77 @@ export const Dashboard: React.FC = () => {
                                 <h3 className="text-3xl font-black">${formatCurrency(stats?.total_spent || 0)}</h3>
                             </div>
 
-                            <div className="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-3xl p-6 shadow-sm hover:shadow-md transition-shadow">
-                                <div className="flex justify-between items-start mb-4">
-                                    <div className="p-3 bg-emerald-500/10 rounded-2xl text-emerald-500">
+                            <div className="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-3xl p-6 shadow-sm">
+                                <div className="flex justify-between items-start gap-4 mb-5">
+                                    <div className="p-3 bg-emerald-500/10 rounded-2xl text-emerald-500 shrink-0">
                                         <TrendingUp size={24} />
                                     </div>
-                                    <span className="text-[10px] font-black uppercase tracking-widest text-[var(--text-secondary)] opacity-50">{I18N_TEXTS.STATS.SALDOS}</span>
+                                    <span className="text-[10px] font-black uppercase tracking-widest text-[var(--text-secondary)] opacity-50 bg-black/5 dark:bg-white/5 px-3 py-1.5 rounded-full shrink-0 ml-auto">
+                                        {I18N_TEXTS.STATS.SALDOS}
+                                    </span>
                                 </div>
                                 <p className="text-[10px] font-black uppercase tracking-[0.2em] text-[var(--text-secondary)] mb-1">{I18N_TEXTS.STATS.OWED_TO_USER}</p>
                                 <h3 className="text-3xl font-black text-emerald-500">${formatCurrency(stats?.owed_to_user || 0)}</h3>
                             </div>
 
-                            <div className="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-3xl p-6 shadow-sm hover:shadow-md transition-shadow">
-                                <div className="flex justify-between items-start mb-4">
-                                    <div className="p-3 bg-rose-500/10 rounded-2xl text-rose-500">
-                                        <TrendingDown size={24} />
+                            {(() => {
+                                const owesDebt = (stats?.user_owes || 0) > 0.009;
+                                return (
+                                    <div className="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-3xl p-6 shadow-sm">
+                                        <div className="flex justify-between items-start gap-4 mb-5">
+                                            <div className={cn(
+                                                "p-3 rounded-2xl shrink-0 transition-colors",
+                                                owesDebt ? "bg-rose-500/10 text-rose-500" : "bg-slate-500/10 text-slate-500 dark:text-slate-400"
+                                            )}>
+                                                {owesDebt ? <TrendingDown size={24} /> : <Check size={24} />}
+                                            </div>
+                                            <span className={cn(
+                                                "text-[10px] font-black uppercase tracking-widest flex items-center gap-1.5 px-3 py-1.5 rounded-full shrink-0 ml-auto shadow-sm",
+                                                owesDebt ? "bg-rose-500/10 text-rose-500" : "bg-slate-500/10 text-slate-500 dark:text-slate-400"
+                                            )}>
+                                                {owesDebt ? (
+                                                    <>
+                                                        <TrendingDown size={12} /> {I18N_TEXTS.STATS.PENDING}
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <Check size={12} /> Al día
+                                                    </>
+                                                )}
+                                            </span>
+                                        </div>
+                                        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-[var(--text-secondary)] mb-1">{I18N_TEXTS.STATS.USER_OWES}</p>
+                                        <h3 className={cn(
+                                            "text-3xl font-black transition-colors",
+                                            owesDebt ? "text-rose-500" : "text-slate-700 dark:text-slate-300"
+                                        )}>
+                                            ${formatCurrency(stats?.user_owes || 0)}
+                                        </h3>
                                     </div>
-                                    <span className="text-[10px] font-black uppercase tracking-widest text-rose-500 flex items-center gap-1 bg-rose-500/10 px-2 py-1 rounded-full">
-                                        {I18N_TEXTS.STATS.PENDING}
-                                    </span>
-                                </div>
-                                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-[var(--text-secondary)] mb-1">{I18N_TEXTS.STATS.USER_OWES}</p>
-                                <h3 className="text-3xl font-black text-rose-500">${formatCurrency(stats?.user_owes || 0)}</h3>
-                            </div>
+                                );
+                            })()}
 
-                            <div className="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-3xl p-6 shadow-sm hover:shadow-md transition-shadow">
-                                <div className="flex justify-between items-start mb-4">
-                                    <div className="p-3 bg-violet-500/10 rounded-2xl text-violet-500">
+                            <div className="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-3xl p-6 shadow-sm">
+                                <div className="flex justify-between items-start gap-4 mb-5">
+                                    <div className="p-3 bg-violet-500/10 rounded-2xl text-violet-500 shrink-0">
                                         <Users size={24} />
                                     </div>
-                                    <div className="flex gap-2">
+                                    <div className="flex gap-2 shrink-0 ml-auto">
+                                        {canCreateGroup && (
+                                            <button 
+                                                onClick={() => navigate(ROUTES.CREATE_GROUP)} 
+                                                className="p-2.5 bg-[var(--primary)] text-white rounded-xl shadow-md shadow-[var(--primary)]/20 transition-all duration-200 hover:scale-105 hover:shadow-md active:scale-95"
+                                                title={I18N_TEXTS.ACTIONS.CREATE_GROUP}
+                                            >
+                                                <Plus size={16} />
+                                            </button>
+                                        )}
                                         <button 
-                                            onClick={() => navigate('/create-group')} 
-                                            className="p-2 bg-[var(--primary)] text-white rounded-xl hover:opacity-90 transition-opacity"
-                                            title={I18N_TEXTS.ACTIONS.CREATE_GROUP}
-                                        >
-                                            <Plus size={18} />
-                                        </button>
-                                        <button 
-                                            onClick={() => navigate('/create-group?tab=join')} 
-                                            className="p-2 bg-emerald-500 text-white rounded-xl hover:opacity-90 transition-opacity"
+                                            onClick={() => navigate(`${ROUTES.CREATE_GROUP}?tab=join`)} 
+                                            className="p-2.5 bg-emerald-500 text-white rounded-xl shadow-md shadow-emerald-500/20 transition-all duration-200 hover:scale-105 hover:shadow-md active:scale-95"
                                             title={I18N_TEXTS.ACTIONS.JOIN_GROUP}
                                         >
-                                            <Users size={18} />
+                                            <UserPlus size={16} />
                                         </button>
                                     </div>
                                 </div>
@@ -217,7 +269,7 @@ export const Dashboard: React.FC = () => {
                                         <Clock size={16} /> {I18N_TEXTS.GROUPS.TITLE}
                                     </h2>
                                     <button 
-                                        onClick={() => navigate('/create-group')}
+                                        onClick={() => navigate(ROUTES.GROUPS)}
                                         className="text-[10px] font-black uppercase tracking-widest text-[var(--primary)] hover:underline"
                                     >
                                         {I18N_TEXTS.ACTIONS.VIEW_ALL}
@@ -245,21 +297,21 @@ export const Dashboard: React.FC = () => {
                                                     <GroupCard
                                                         key={group.id}
                                                         group={mappedGroup}
-                                                        onClick={() => navigate(`/grupo/${group.id}`)}
+                                                        onClick={() => navigate(ROUTES.GROUP_DETAIL(group.id))}
                                                         onDelete={mappedGroup.isAdmin ? (e) => handleDelete(e, group.id) : undefined}
                                                         appearance={appearance}
                                                     />
                                                 );
                                             })
                                         ) : (
-                                            <div className="col-span-full py-20 text-center border-4 border-dashed border-[var(--border-color)] rounded-[3rem] opacity-30">
+                                            <div className="col-span-full py-20 text-center border-4 border-dashed border-[var(--border-color)] rounded-[3rem] opacity-40">
                                                 <Users size={48} className="mx-auto mb-4" />
                                                 <p className="text-sm font-black uppercase tracking-widest">{I18N_TEXTS.GROUPS.NO_GROUPS}</p>
                                                 <button 
-                                                    onClick={() => navigate('/create-group')}
-                                                    className="mt-4 text-[var(--primary)] font-bold text-xs uppercase tracking-widest"
+                                                    onClick={() => navigate(canCreateGroup ? ROUTES.CREATE_GROUP : `${ROUTES.CREATE_GROUP}?tab=join`)}
+                                                    className="mt-4 text-[var(--primary)] font-bold text-xs uppercase tracking-widest hover:underline"
                                                 >
-                                                    {I18N_TEXTS.ACTIONS.CREATE_FIRST}
+                                                    {canCreateGroup ? I18N_TEXTS.ACTIONS.CREATE_FIRST : I18N_TEXTS.ACTIONS.JOIN_FIRST}
                                                 </button>
                                             </div>
                                         )}
@@ -307,7 +359,7 @@ export const Dashboard: React.FC = () => {
                                         <button 
                                             onClick={() => generateFinancialReport({ user, stats, transactions })}
                                             disabled={!stats}
-                                            className="w-full py-4 bg-black/5 hover:bg-black/10 disabled:opacity-50 disabled:cursor-not-allowed rounded-2xl text-[10px] font-black uppercase tracking-widest transition-colors flex items-center justify-center gap-2"
+                                            className="w-full py-4 bg-black/5 hover:bg-slate-100 dark:hover:bg-white/5 active:bg-slate-200 dark:active:bg-white/10 disabled:opacity-50 disabled:cursor-not-allowed rounded-2xl text-[10px] font-black uppercase tracking-widest transition-colors duration-200 flex items-center justify-center gap-2 border border-transparent active:border-slate-300 dark:active:border-slate-700"
                                         >
                                             {I18N_TEXTS.ACTIONS.EXPORT_PDF} <ArrowUpRight size={14} />
                                         </button>
@@ -321,8 +373,8 @@ export const Dashboard: React.FC = () => {
                                     <h3 className="text-xl font-black uppercase tracking-tighter mb-2">{I18N_TEXTS.OCR_CARD.TITLE}</h3>
                                     <p className="text-white/70 text-sm font-medium mb-6">{I18N_TEXTS.OCR_CARD.DESCRIPTION}</p>
                                     <button 
-                                        onClick={() => navigate('/ocr-scanner')}
-                                        className="bg-white text-[var(--primary)] px-6 py-3 rounded-xl font-black text-xs uppercase tracking-widest shadow-xl"
+                                        onClick={() => navigate(ROUTES.OCR_SCANNER)}
+                                        className="bg-white text-[var(--primary)] px-6 py-3 rounded-xl font-black text-xs uppercase tracking-widest shadow-xl transition-all duration-200 hover:scale-105 hover:shadow-md active:scale-95"
                                     >
                                         {I18N_TEXTS.ACTIONS.UPLOAD_FILE}
                                     </button>

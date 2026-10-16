@@ -31,7 +31,7 @@ export const App = () => {
                                 <AnimatedRoutes />
                             </BrowserRouter>
                         <Toaster 
-                        position="top-right" 
+                        position="bottom-right" 
                         richColors 
                         closeButton 
                         duration={7000}

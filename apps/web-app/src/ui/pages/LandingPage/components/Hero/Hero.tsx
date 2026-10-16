@@ -1,5 +1,5 @@
 import React from 'react';
-import { PlusCircle, Users, Store, DollarSign, QrCode } from 'lucide-react';
+import { PlusCircle, Users, Store, DollarSign, QrCode, Lock } from 'lucide-react';
 import styles from './Hero.module.css';
 import { useNavigate } from 'react-router-dom';
 import { ROUTES } from '../../../../../infrastructure/routes';
@@ -48,7 +48,9 @@ export const Hero = () => {
                     </div>
 
                     <div className={styles.hint}>
-                        <span className={styles.hintEmoji}>🔒</span>
+                        <span className={styles.hintEmoji}>
+                            <Lock size={18} />
+                        </span>
                         <p>Inicia sesión o regístrate para gestionar tus grupos y pagos.</p>
                     </div>
                 </div>

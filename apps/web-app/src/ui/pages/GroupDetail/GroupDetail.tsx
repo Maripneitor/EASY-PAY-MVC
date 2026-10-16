@@ -12,7 +12,9 @@ import {
     Zap,
     AlertTriangle,
     AlertCircle,
-    Save
+    Save,
+    TrendingUp,
+    TrendingDown
 } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -39,6 +41,7 @@ import { groupRepository } from '../../../infrastructure/api/repositories';
 import { TwoFactorModal } from '../../components/Security/TwoFactorModal';
 import { EditGroupModal } from '../Groups/components/EditGroupModal';
 import { EditItemModal } from './components/EditItemModal';
+import { useAuthContext } from '../../context/AuthContext';
 
 const I18N_TEXTS = {
     TABS: {
@@ -67,11 +70,13 @@ export const GroupDetail = () => {
     const params = useParams();
     const finalId = params.groupId || params.group_id || params.id || "";
     const { toggleSidebar } = useOutletContext<{ toggleSidebar: () => void }>();
+    const { user } = useAuthContext();
     const navigate = useNavigate();
 
     const [isWizardOpen, setIsWizardOpen] = useState(false);
     const [selectedExpense, setSelectedExpense] = useState<any>(null);
     const [isEditingGroupOpen, setIsEditingGroupOpen] = useState(false);
+    const [isCopied, setIsCopied] = useState(false);
 
     // Quick Assignment Mode States
     const [isQuickAssignMode, setIsQuickAssignMode] = useState(false);
@@ -96,6 +101,16 @@ export const GroupDetail = () => {
         rejectSettlement
     } = useGroupDetail(finalId);
 
+    const handleCopyCode = () => {
+        if (!groupCode) return;
+        navigator.clipboard.writeText(groupCode);
+        setIsCopied(true);
+        toast.success("ID copiado");
+        setTimeout(() => {
+            setIsCopied(false);
+        }, 1000);
+    };
+
     const [isAddMemberOpen, setIsAddMemberOpen] = useState(false);
     const { 
         cards, loading: isFetchingCards, refreshCards, 
@@ -103,7 +118,12 @@ export const GroupDetail = () => {
         setIsAddingCard: setIsAddCardOpen 
     } = useMyPayments();
     
-    const isAdmin = adminId === currentUserId;
+    const userRoles = (user?.roles || ['Usuario Regular']).map((r: string) => r.toLowerCase());
+    const isGlobalAdmin = userRoles.includes('administrador') || userRoles.includes('admin');
+    const isEditor = userRoles.includes('editor');
+    const userPermissions = user?.permissions || [];
+    const isAdmin = adminId === currentUserId || isGlobalAdmin;
+    const canWriteExpenses = isAdmin || isEditor || userPermissions.includes('expenses:write');
     useDocumentTitle(groupName ? `${groupName} - Detalle` : 'Detalle de Grupo');
 
     const handleApprove = async (s: any) => {
@@ -220,33 +240,54 @@ export const GroupDetail = () => {
                 onMenuClick={toggleSidebar}
                 onBack={() => navigate(ROUTES.GROUPS)}
                 rightSlot={
-                    <div className="hidden md:flex items-center gap-3 bg-white/10 px-4 py-2 rounded-xl border border-white/10 backdrop-blur-sm">
-                        <div className="flex flex-col items-end">
-                            <span className="text-[8px] font-black uppercase tracking-widest text-slate-400">ID Grupo</span>
-                            <span className="font-mono text-xs font-black tracking-widest text-[var(--text-primary)]">{groupCode}</span>
-                        </div>
+                    <div className="hidden md:flex items-center gap-2 bg-slate-100 dark:bg-white/5 px-3 py-1.5 rounded-xl border border-slate-200 dark:border-white/10">
+                        <span className="text-[10px] font-medium text-slate-400">ID:</span>
+                        <span className="font-mono text-xs font-medium text-slate-500 dark:text-slate-400 tracking-wider">{groupCode}</span>
                         <button 
-                            onClick={() => {
-                                navigator.clipboard.writeText(groupCode);
-                                toast.success("ID copiado");
-                            }}
-                            className="p-1.5 hover:bg-white/10 rounded-lg transition-all text-slate-400 hover:text-[var(--primary)]"
+                            onClick={handleCopyCode}
+                            className="p-1 hover:bg-black/5 dark:hover:bg-white/10 rounded transition-all text-slate-400 hover:text-[var(--primary)] relative flex items-center justify-center min-w-[22px] min-h-[22px]"
+                            title="Copiar ID"
+                            aria-label="Copiar ID del grupo"
                         >
-                            <Copy size={14} />
+                            <AnimatePresence mode="wait" initial={false}>
+                                {isCopied ? (
+                                    <motion.span
+                                        key="check"
+                                        initial={{ opacity: 0, scale: 0.8 }}
+                                        animate={{ opacity: 1, scale: 1 }}
+                                        exit={{ opacity: 0, scale: 0.8 }}
+                                        transition={{ duration: 0.15 }}
+                                        className="text-emerald-500 inline-flex items-center"
+                                    >
+                                        <Check size={13} className="stroke-[3]" />
+                                    </motion.span>
+                                ) : (
+                                    <motion.span
+                                        key="copy"
+                                        initial={{ opacity: 0, scale: 0.8 }}
+                                        animate={{ opacity: 1, scale: 1 }}
+                                        exit={{ opacity: 0, scale: 0.8 }}
+                                        transition={{ duration: 0.15 }}
+                                        className="inline-flex items-center"
+                                    >
+                                        <Copy size={13} />
+                                    </motion.span>
+                                )}
+                            </AnimatePresence>
                         </button>
                     </div>
                 }
             />
 
             <div className="bg-white/50 dark:bg-white/5 border-b border-[var(--border-color)] backdrop-blur-md sticky top-[4.5rem] md:top-[6rem] z-40">
-                <div className="max-w-[1600px] mx-auto px-4 md:px-8 py-4 flex flex-wrap items-center justify-between gap-4">
+                <div className="max-w-[1600px] mx-auto px-4 md:px-8 py-3.5 flex flex-wrap items-center justify-between gap-3">
                     <div className="flex items-center gap-3">
                         {userOwed < -0.01 && (
                             <button 
                                 onClick={() => navigate(ROUTES.SETTLE_UP(finalId))}
-                                className="px-6 py-3 bg-emerald-500 text-white rounded-2xl text-[10px] sm:text-xs font-black uppercase tracking-widest shadow-xl shadow-emerald-500/20 hover:scale-105 active:scale-95 transition-all flex items-center gap-2"
+                                className="h-10 px-4 border border-emerald-500/40 text-emerald-600 dark:text-emerald-400 bg-emerald-500/5 transition-colors duration-200 hover:bg-emerald-500/10 active:bg-emerald-500/20 active:border-emerald-500/60 rounded-xl text-xs font-bold flex items-center gap-2 shadow-sm"
                             >
-                                <DollarSign size={18} /> Saldar Deuda
+                                <DollarSign size={16} /> Saldar Deuda
                             </button>
                         )}
                     </div>
@@ -255,59 +296,73 @@ export const GroupDetail = () => {
                         <div className="flex items-center gap-2">
                             <button 
                                 onClick={() => setIsEditingGroupOpen(true)}
-                                className="flex items-center gap-2 px-6 py-3 border border-blue-500/30 text-blue-500 bg-blue-500/5 rounded-2xl text-[10px] sm:text-xs font-black uppercase tracking-widest hover:bg-blue-500/10 transition-all"
+                                className="h-10 px-4 border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 bg-transparent transition-colors duration-200 hover:bg-slate-50 dark:hover:bg-white/5 active:bg-slate-100 dark:active:bg-white/10 active:border-slate-400 dark:active:border-slate-500 rounded-xl text-xs font-bold flex items-center gap-2 shadow-sm"
                             >
-                                <Pencil size={18} /> Editar Grupo
+                                <Pencil size={16} /> Editar Grupo
                             </button>
                             <button 
                                 onClick={deleteGroup}
-                                className="flex items-center gap-2 px-6 py-3 border border-rose-500/30 text-rose-500 bg-rose-500/5 rounded-2xl text-[10px] sm:text-xs font-black uppercase tracking-widest hover:bg-rose-500/10 transition-all"
+                                className="h-10 px-4 border border-rose-500/40 text-rose-600 dark:text-rose-400 bg-rose-500/5 transition-colors duration-200 hover:bg-red-50 dark:hover:bg-red-950/20 active:bg-red-100 dark:active:bg-red-950/40 active:border-rose-500/60 rounded-xl text-xs font-bold flex items-center gap-2 shadow-sm"
                             >
-                                <Trash2 size={18} /> Eliminar Grupo
+                                <Trash2 size={16} /> Eliminar Grupo
                             </button>
                         </div>
                     )}
                 </div>
             </div>
 
-
-
-            {/* Stats Cards (Mini) */}
+            {/* Stats Cards (Mini) - Strict static presentation for purely informative cards */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 {[
-                    { label: "Total Gastado", value: totalSpent, icon: <Receipt size={20}/>, color: "var(--primary)" },
-                    { label: "Tu Parte", value: userShare, icon: <UserCircle size={20}/>, color: "#10b981" },
                     { 
-                        label: userOwed >= 0 ? "Te Deben" : "Debes", 
+                        label: "Total Gastado", 
+                        value: totalSpent, 
+                        icon: <Receipt size={22} className="text-blue-600 dark:text-blue-400" />, 
+                        bg: "bg-blue-500/10 dark:bg-blue-500/20",
+                        textColor: "text-slate-900 dark:text-white"
+                    },
+                    { 
+                        label: "Tu Parte", 
+                        value: userShare, 
+                        icon: <UserCircle size={22} className="text-emerald-600 dark:text-emerald-400" />, 
+                        bg: "bg-emerald-500/10 dark:bg-emerald-500/20",
+                        textColor: "text-slate-900 dark:text-white"
+                    },
+                    { 
+                        label: userOwed < -0.01 ? "Debes" : (userOwed > 0.01 ? "Te Deben" : "Al día"), 
                         value: Math.abs(userOwed), 
-                        icon: userOwed >= 0 ? <PieChart size={20}/> : <DollarSign size={20}/>, 
-                        color: userOwed >= 0 ? "#f59e0b" : "#f43f5e",
+                        icon: userOwed < -0.01 
+                            ? <TrendingDown size={22} className="text-rose-600 dark:text-rose-400" /> 
+                            : (userOwed > 0.01 ? <TrendingUp size={22} className="text-emerald-600 dark:text-emerald-400" /> : <Check size={22} className="text-slate-500 dark:text-slate-400" />), 
+                        bg: userOwed < -0.01 
+                            ? "bg-rose-500/10 dark:bg-rose-500/20" 
+                            : (userOwed > 0.01 ? "bg-emerald-500/10 dark:bg-emerald-500/20" : "bg-slate-500/10 dark:bg-slate-500/20"),
+                        textColor: userOwed < -0.01 
+                            ? "text-rose-600 dark:text-rose-400" 
+                            : (userOwed > 0.01 ? "text-emerald-600 dark:text-emerald-400" : "text-slate-700 dark:text-slate-300"),
                         action: userOwed < -0.01 ? (
                             <button 
                                 onClick={() => navigate(ROUTES.SETTLE_UP(finalId))}
-                                className="mt-2 px-4 py-1.5 bg-white/20 hover:bg-white/30 text-white rounded-xl text-[10px] font-black uppercase tracking-widest transition-all backdrop-blur-md"
+                                className="mt-2 px-3 py-1 bg-rose-500/10 hover:bg-rose-500/20 text-rose-600 dark:text-rose-400 border border-rose-500/20 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all duration-200 hover:scale-105 active:scale-95"
                             >
                                 Pagar Ahora
                             </button>
                         ) : null
                     },
                 ].map((stat, i) => (
-                    <motion.div 
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: i * 0.1 }}
+                    <div 
                         key={i}
-                        className="p-6 bg-[var(--bg-card)] border border-[var(--border-color)] rounded-[2.5rem] flex items-center gap-6 shadow-sm group hover:border-[var(--primary)]/30 transition-all"
+                        className="p-6 bg-[var(--bg-card)] border border-[var(--border-color)] rounded-3xl flex items-center gap-5 shadow-sm"
                     >
-                        <div className="w-14 h-14 rounded-[1.5rem] flex items-center justify-center text-white shadow-lg" style={{ backgroundColor: stat.color }}>
+                        <div className={cn("w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 shadow-sm", stat.bg)}>
                             {stat.icon}
                         </div>
-                        <div>
+                        <div className="min-w-0 flex-1">
                             <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-0.5">{stat.label}</p>
-                            <p className="text-2xl font-black tracking-tighter text-[var(--text-primary)] group-hover:text-[var(--primary)] transition-colors">${Number(stat.value || 0).toFixed(2)}</p>
+                            <p className={cn("text-2xl font-black tracking-tight", stat.textColor)}>${Number(stat.value || 0).toFixed(2)}</p>
                             {(stat as any).action}
                         </div>
-                    </motion.div>
+                    </div>
                 ))}
             </div>
 
@@ -319,13 +374,17 @@ export const GroupDetail = () => {
                             key={tab}
                             onClick={() => setActiveTab(tab as any)}
                             className={cn(
-                                "flex-1 min-w-[120px] py-6 text-xs font-black uppercase tracking-[0.2em] transition-all relative",
-                                activeTab === tab ? "text-[var(--primary)]" : "text-slate-400 hover:text-slate-600"
+                                "flex-1 min-w-[120px] py-6 text-xs font-black uppercase tracking-[0.2em] relative transition-colors duration-200",
+                                activeTab === tab ? "text-[var(--primary)]" : "text-slate-400 hover:text-slate-900 dark:hover:text-white"
                             )}
                         >
                             {tab}
                             {activeTab === tab && (
-                                <motion.div layoutId="activeTab" className="absolute bottom-0 left-0 right-0 h-1 bg-[var(--primary)] rounded-full" />
+                                <motion.div 
+                                    layoutId="activeTab" 
+                                    className="absolute bottom-0 left-0 right-0 h-1 bg-[var(--primary)] rounded-full" 
+                                    transition={{ type: "spring", stiffness: 500, damping: 35 }}
+                                />
                             )}
                         </button>
                     ))}
@@ -345,255 +404,279 @@ export const GroupDetail = () => {
                                      <div className="flex items-center gap-3">
                                          <button 
                                              onClick={handleExportPDF}
-                                             className="p-4 bg-white border border-[var(--border-color)] text-blue-500 rounded-2xl hover:border-blue-500 hover:bg-blue-50/50 transition-all shadow-sm"
+                                             className="h-11 w-11 flex items-center justify-center bg-white/5 border border-slate-300 dark:border-slate-700 text-blue-500 rounded-2xl transition-opacity duration-200 opacity-70 hover:opacity-100 shadow-sm"
                                              title="Exportar PDF"
+                                             aria-label="Exportar PDF"
                                          >
-                                             <Download size={22} />
+                                             <Download size={18} />
                                          </button>
-                                         {isAdmin && (
+                                         {canWriteExpenses && (
                                             <>
                                                 <button 
                                                     onClick={handleToggleQuickAssign}
                                                     className={cn(
-                                                        "flex items-center gap-2 px-6 py-4 rounded-2xl text-xs font-black uppercase tracking-widest transition-all",
+                                                        "h-11 px-4 rounded-2xl text-xs font-bold flex items-center gap-2 border shadow-sm transition-colors duration-200",
                                                         isQuickAssignMode 
-                                                            ? "bg-rose-500 text-white shadow-lg shadow-rose-500/20" 
-                                                            : "bg-white border border-[var(--border-color)] text-[var(--text-secondary)] hover:border-[var(--primary)] hover:text-[var(--primary)] shadow-sm"
+                                                            ? "border-rose-500/40 text-rose-600 dark:text-rose-400 bg-rose-500/5 hover:bg-red-50 dark:hover:bg-red-950/20 active:bg-red-100 dark:active:bg-red-950/40" 
+                                                            : "border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 bg-transparent hover:bg-slate-50 dark:hover:bg-white/5 active:bg-slate-100 dark:active:bg-white/10 active:border-slate-400 dark:active:border-slate-500"
                                                     )}
                                                     title="Asignación Rápida"
                                                 >
-                                                    {isQuickAssignMode ? <X size={18} /> : <Users size={18} />}
+                                                    {isQuickAssignMode ? <X size={16} /> : <Users size={16} />}
                                                     {isQuickAssignMode ? "Cancelar" : "Asignar Items"}
                                                 </button>
 
                                                 {isQuickAssignMode ? (
                                                     <button 
                                                         onClick={handleSaveQuickAssignments}
-                                                        className="flex items-center gap-3 px-8 py-4 bg-emerald-500 text-white rounded-[1.5rem] text-sm font-black uppercase tracking-widest shadow-2xl shadow-emerald-500/30 hover:scale-[1.02] active:scale-[0.98] transition-all"
+                                                        className="h-11 px-5 bg-emerald-500 text-white rounded-2xl text-xs font-bold shadow-lg shadow-emerald-500/20 transition-all duration-200 hover:scale-105 hover:shadow-md active:scale-95 flex items-center gap-2"
                                                     >
-                                                        <Save size={18} /> Guardar Todo
+                                                        <Save size={16} /> Guardar Todo
                                                     </button>
                                                 ) : (
                                                     <button 
                                                         onClick={() => navigate(ROUTES.REGISTER_EXPENSE(finalId))}
-                                                        className="group flex items-center gap-3 px-8 py-4 bg-[var(--primary)] text-white rounded-[1.5rem] text-sm font-black uppercase tracking-widest shadow-2xl shadow-[var(--primary)]/30 hover:scale-[1.02] active:scale-[0.98] transition-all"
+                                                        className="h-11 px-5 bg-[var(--primary)] text-white rounded-2xl text-xs font-bold shadow-lg shadow-[var(--primary)]/20 transition-all duration-200 hover:scale-105 hover:shadow-md active:scale-95 flex items-center gap-2"
                                                     >
-                                                        <div className="w-8 h-8 rounded-xl bg-white/20 flex items-center justify-center group-hover:rotate-90 transition-transform">
-                                                            <Plus size={18} />
-                                                        </div>
-                                                        Nuevo Gasto
+                                                        <Plus size={16} />
+                                                        <span>Nuevo Gasto</span>
                                                     </button>
                                                 )}
                                                 
                                                 {!isQuickAssignMode && (
                                                     <button 
                                                         onClick={() => navigate(ROUTES.OCR_SCANNER)}
-                                                        className="p-4 bg-white border border-[var(--border-color)] text-[var(--text-secondary)] rounded-2xl hover:border-[var(--primary)] hover:text-[var(--primary)] transition-all shadow-sm"
+                                                        className="h-11 w-11 flex items-center justify-center bg-white/5 border border-slate-300 dark:border-slate-700 text-slate-600 dark:text-slate-300 rounded-2xl transition-opacity duration-200 opacity-70 hover:opacity-100 shadow-sm"
                                                         title="Escanear Ticket"
+                                                        aria-label="Escanear Ticket"
                                                     >
-                                                        <Receipt size={22} />
+                                                        <Receipt size={18} />
                                                     </button>
                                                 )}
                                             </>
                                          )}
                                  </div>
                                  </div>
-                                <div className="overflow-x-auto overflow-y-visible">
-                                     <table className="w-full text-left border-separate border-spacing-y-4">
-                                         <thead>
-                                             <tr className="text-[10px] font-black text-slate-400 uppercase tracking-[0.25em] px-4">
-                                                 <th className="pb-2 pl-8">Gasto / Concepto</th>
-                                                 <th className="pb-2">Pagador</th>
-                                                 {isQuickAssignMode ? (
-                                                     <th className="pb-2">Repartir entre (Clic para asignar)</th>
-                                                 ) : (
-                                                     <>
-                                                        <th className="pb-2">Importe</th>
-                                                        <th className="pb-2">Fecha</th>
-                                                     </>
-                                                 )}
-                                                 <th className="pb-2 pr-8 text-right">Estado</th>
-                                             </tr>
-                                         </thead>
-                                         <tbody>
-                                             {activities.map((act: any) => {
-                                                 const comprador = membersData.find(i => i.id === act.comprador_id);
-                                                 const category = act.categoria || "Otros";
-                                                 const categoryStyles: any = {
-                                                     "Comida": "bg-orange-500/10 text-orange-500 border-orange-500/20",
-                                                     "Transporte": "bg-blue-500/10 text-blue-500 border-blue-500/20",
-                                                     "Entretenimiento": "bg-purple-500/10 text-purple-500 border-purple-500/20",
-                                                     "Otros": "bg-slate-500/10 text-slate-500 border-slate-500/20"
-                                                 };
-                                                 
-                                                 const isFullyAssigned = (isQuickAssignMode ? (pendingAssignments[act.id] || []) : (act.participantes_ids || [])).length > 0;
+                                 {activities.length > 0 ? (
+                                    <div className="overflow-x-auto overflow-y-visible">
+                                         <table className="w-full text-left border-separate border-spacing-y-4">
+                                             <thead>
+                                                 <tr className="text-[10px] font-black text-slate-400 uppercase tracking-[0.25em] px-4">
+                                                     <th className="pb-2 pl-8">Gasto / Concepto</th>
+                                                     <th className="pb-2">Pagador</th>
+                                                     {isQuickAssignMode ? (
+                                                         <th className="pb-2">Repartir entre (Clic para asignar)</th>
+                                                     ) : (
+                                                         <>
+                                                            <th className="pb-2">Importe</th>
+                                                            <th className="pb-2">Fecha</th>
+                                                         </>
+                                                     )}
+                                                     <th className="pb-2 pr-8 text-right">Estado</th>
+                                                 </tr>
+                                             </thead>
+                                             <tbody>
+                                                 {activities.map((act: any) => {
+                                                     const comprador = membersData.find(i => i.id === act.comprador_id);
+                                                     const category = act.categoria || "Otros";
+                                                     const categoryStyles: any = {
+                                                         "Comida": "bg-orange-500/10 text-orange-600 dark:text-orange-400 border-orange-500/20",
+                                                         "Transporte": "bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20",
+                                                         "Entretenimiento": "bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20",
+                                                         "Otros": "bg-slate-500/10 text-slate-600 dark:text-slate-400 border-slate-500/20"
+                                                     };
+                                                     
+                                                     const isFullyAssigned = (isQuickAssignMode ? (pendingAssignments[act.id] || []) : (act.participantes_ids || [])).length > 0;
 
-                                                 return (
-                                                      <motion.tr 
-                                                          layout
-                                                          key={act.id} 
-                                                          onClick={() => !isQuickAssignMode && setSelectedExpense(act)}
-                                                          className={cn(
-                                                              "group bg-white/50 dark:bg-white/[0.02] backdrop-blur-xl border border-white/20 dark:border-white/5 hover:border-[var(--primary)]/30 transition-all cursor-pointer shadow-sm hover:shadow-xl hover:shadow-[var(--primary)]/5",
-                                                              isQuickAssignMode && "cursor-default"
-                                                          )}
-                                                      >
-                                                          <td className="py-6 pl-8 rounded-l-[2.5rem] border-y border-l border-white/20 dark:border-white/5">
-                                                              <div className="flex items-center gap-5">
-                                                                  <div className={cn("w-14 h-14 rounded-2xl flex items-center justify-center border shadow-inner transition-all group-hover:scale-110 group-hover:rotate-3", categoryStyles[category] || categoryStyles["Otros"])}>
-                                                                      {category === "Comida" && <Utensils size={24} />}
-                                                                      {category === "Transporte" && <Car size={24} />}
-                                                                      {category === "Entretenimiento" && <Gamepad2 size={24} />}
-                                                                      {category === "Otros" && <ShoppingBag size={24} />}
-                                                                  </div>
-                                                                  <div>
-                                                                      <p className="font-black text-slate-800 dark:text-white uppercase tracking-tight text-base group-hover:text-[var(--primary)] transition-colors">{act.nombre}</p>
-                                                                      {!isQuickAssignMode && (
-                                                                          <div className="flex flex-wrap gap-1.5 mt-2">
-                                                                              {Array.isArray(act.nombres_participantes) && act.nombres_participantes.length > 0 ? act.nombres_participantes.map((p: string, j: number) => (
-                                                                                  <span key={j} className="text-[8px] font-black uppercase px-2 py-0.5 bg-black/5 dark:bg-white/5 rounded-full text-slate-500 dark:text-slate-300 group-hover:bg-[var(--primary)]/10 group-hover:text-[var(--primary)] transition-all">
-                                                                                      {p.split(' ')[0]}
-                                                                                  </span>
-                                                                              )) : (
-                                                                                  <span className="text-[8px] font-black uppercase px-2 py-0.5 bg-rose-500/5 rounded-full text-rose-500/60">Sin asignar</span>
-                                                                              )}
-                                                                          </div>
-                                                                      )}
-                                                                      <span className={cn("inline-block mt-2 text-[8px] font-black uppercase px-2.5 py-1 rounded-lg border tracking-[0.15em]", categoryStyles[category] || categoryStyles["Otros"])}>
-                                                                          {category}
-                                                                      </span>
-                                                                  </div>
-                                                              </div>
-                                                          </td>
-                                                          <td className="py-6 border-y border-white/20 dark:border-white/5">
-                                                              <div className="flex items-center gap-3">
-                                                                  <div className="w-10 h-10 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-xs font-black text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
-                                                                      {comprador?.nombre?.charAt(0) || "U"}
-                                                                  </div>
-                                                                  <span className="text-xs font-black text-slate-600 dark:text-slate-400 uppercase tracking-wide">{comprador?.nombre || "Usuario"}</span>
-                                                              </div>
-                                                          </td>
-                                                          
-                                                          {isQuickAssignMode ? (
-                                                              <td className="py-6 border-y border-white/20 dark:border-white/5">
-                                                                  <div className="flex flex-wrap gap-3">
-                                                                      {membersData.map(member => {
-                                                                          const isAssigned = (pendingAssignments[act.id] || []).includes(member.id);
-                                                                          const memberColor = (member as any).color || "var(--primary)";
-                                                                          return (
-                                                                              <motion.button
-                                                                                  whileHover={{ scale: 1.1, y: -2 }}
-                                                                                  whileTap={{ scale: 0.9 }}
-                                                                                  key={member.id}
-                                                                                  onClick={(e) => {
-                                                                                      e.stopPropagation();
-                                                                                      toggleMemberInItem(act.id, member.id);
-                                                                                  }}
-                                                                                  className={cn(
-                                                                                      "group/member relative flex flex-col items-center transition-all",
-                                                                                      !isAssigned && "opacity-25 grayscale hover:opacity-100 hover:grayscale-0"
+                                                     return (
+                                                          <motion.tr 
+                                                              layout
+                                                              key={act.id} 
+                                                              onClick={() => !isQuickAssignMode && setSelectedExpense(act)}
+                                                              className={cn(
+                                                                  "group bg-white/50 dark:bg-white/[0.02] backdrop-blur-xl border border-white/20 dark:border-white/5 hover:border-[var(--primary)]/30 transition-all cursor-pointer shadow-sm hover:shadow-xl hover:shadow-[var(--primary)]/5",
+                                                                  isQuickAssignMode && "cursor-default"
+                                                              )}
+                                                          >
+                                                              <td className="py-6 pl-8 rounded-l-[2.5rem] border-y border-l border-white/20 dark:border-white/5">
+                                                                  <div className="flex items-center gap-5">
+                                                                      <div className={cn("w-14 h-14 rounded-2xl flex items-center justify-center border shadow-inner transition-all group-hover:scale-110 group-hover:rotate-3", categoryStyles[category] || categoryStyles["Otros"])}>
+                                                                          {category === "Comida" && <Utensils size={24} />}
+                                                                          {category === "Transporte" && <Car size={24} />}
+                                                                          {category === "Entretenimiento" && <Gamepad2 size={24} />}
+                                                                          {category === "Otros" && <ShoppingBag size={24} />}
+                                                                      </div>
+                                                                      <div>
+                                                                          <p className="font-bold text-slate-800 dark:text-white text-base group-hover:text-[var(--primary)] transition-colors">{act.nombre}</p>
+                                                                          {!isQuickAssignMode && (
+                                                                              <div className="flex flex-wrap gap-1.5 mt-2">
+                                                                                  {Array.isArray(act.nombres_participantes) && act.nombres_participantes.length > 0 ? act.nombres_participantes.map((p: string, j: number) => (
+                                                                                      <span key={j} className="text-xs font-normal px-2.5 py-0.5 bg-slate-100 dark:bg-slate-800 rounded-md text-slate-700 dark:text-slate-300 transition-all">
+                                                                                          {p}
+                                                                                      </span>
+                                                                                  )) : (
+                                                                                      <span className="text-xs font-normal px-2.5 py-0.5 bg-rose-500/10 rounded-md text-rose-500">Sin asignar</span>
                                                                                   )}
-                                                                                  title={member.nombre}
-                                                                              >
-                                                                                  <div className={cn(
-                                                                                      "w-12 h-12 rounded-2xl border-2 flex items-center justify-center text-sm font-black transition-all shadow-sm",
-                                                                                      isAssigned 
-                                                                                        ? "bg-white dark:bg-slate-900 shadow-md" 
-                                                                                        : "border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-400"
-                                                                                  )}
-                                                                                  style={isAssigned ? { borderColor: memberColor, color: memberColor } : {}}>
-                                                                                      {member.nombre.charAt(0)}
-                                                                                  </div>
-                                                                                  {isAssigned && (
-                                                                                      <motion.div 
-                                                                                        initial={{ scale: 0, rotate: -45 }}
-                                                                                        animate={{ scale: 1, rotate: 0 }}
-                                                                                        className="absolute -top-1.5 -right-1.5 w-6 h-6 rounded-full border-2 border-white dark:border-slate-900 flex items-center justify-center shadow-lg"
-                                                                                        style={{ backgroundColor: memberColor }}
-                                                                                      >
-                                                                                          <Check size={12} className="text-white stroke-[4]" />
-                                                                                      </motion.div>
-                                                                                  )}
-                                                                                  <span className="text-[7px] font-black uppercase mt-2 text-slate-500 opacity-0 group-hover/member:opacity-100 transition-opacity">
-                                                                                      {member.nombre.split(' ')[0]}
-                                                                                  </span>
-                                                                              </motion.button>
-                                                                          );
-                                                                      })}
+                                                                              </div>
+                                                                          )}
+                                                                          <span className={cn("inline-block mt-2 text-xs font-medium px-2.5 py-0.5 rounded-lg border", categoryStyles[category] || categoryStyles["Otros"])}>
+                                                                              {category}
+                                                                          </span>
+                                                                      </div>
                                                                   </div>
                                                               </td>
-                                                          ) : (
-                                                              <>
-                                                                  <td className="py-6 border-y border-white/20 dark:border-white/5">
-                                                                      {(() => {
-                                                                          const rawVal = act.monto ?? act.precio ?? 0;
-                                                                          const numVal = Number(rawVal);
-                                                                          const finalMonto = isNaN(numVal) ? 0 : numVal;
-                                                                          return (
-                                                                            <span className="font-black text-xl font-mono tracking-tighter text-slate-800 dark:text-white">${finalMonto.toFixed(2)}</span>
-                                                                          );
-                                                                      })()}
-                                                                  </td>
-                                                                  <td className="py-6 border-y border-white/20 dark:border-white/5">
-                                                                      <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{act.fecha}</span>
-                                                                  </td>
-                                                              </>
-                                                          )}
-                                                          
-                                                          <td className="py-6 pr-8 rounded-r-[2.5rem] border-y border-r border-white/20 dark:border-white/5 text-right">
-                                                                  <div className="flex justify-end items-center gap-5">
-                                                                     <div className={cn(
-                                                                         "flex items-center gap-2 px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-[0.2em] shadow-sm",
-                                                                         isFullyAssigned 
-                                                                            ? "bg-emerald-500/10 text-emerald-500 border border-emerald-500/20" 
-                                                                            : "bg-amber-500/10 text-amber-500 border border-amber-500/20"
-                                                                     )}>
-                                                                         {isFullyAssigned ? <CheckCircle size={14} /> : <AlertTriangle size={14} />}
-                                                                         <span className="hidden xl:inline">{isFullyAssigned ? "Liquidado" : "Pendiente"}</span>
-                                                                     </div>
-
-                                                                     {isAdmin && !isQuickAssignMode && (
-                                                                         <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                                             <button 
-                                                                                 onClick={(e) => {
-                                                                                     e.stopPropagation();
-                                                                                     e.preventDefault();
-                                                                                     setItemToEdit(act);
-                                                                                     setIsEditItemModalOpen(true);
-                                                                                 }}
-                                                                                 className="p-3 hover:bg-blue-500/10 rounded-2xl text-blue-400 hover:text-blue-500 transition-all"
-                                                                                 title="Editar"
-                                                                             >
-                                                                                 <Pencil size={20} />
-                                                                             </button>
-                                                                             <button 
-                                                                                 onClick={(e) => {
-                                                                                     e.stopPropagation();
-                                                                                     e.preventDefault();
-                                                                                     if (window.confirm("¿Eliminar este gasto?")) {
-                                                                                         deleteItem(act.id);
-                                                                                     }
-                                                                                 }}
-                                                                                 className="p-3 hover:bg-rose-500/10 rounded-2xl text-rose-400 hover:text-rose-500 transition-all"
-                                                                                 title="Eliminar"
-                                                                             >
-                                                                                 <Trash2 size={20} />
-                                                                             </button>
-                                                                         </div>
-                                                                     )}
-                                                                     {!isQuickAssignMode && (
-                                                                         <button className="p-3 bg-slate-50 dark:bg-white/5 hover:bg-[var(--primary)]/10 rounded-2xl text-slate-400 hover:text-[var(--primary)] transition-all">
-                                                                             <ArrowRight size={20} />
-                                                                         </button>
-                                                                     )}
+                                                              <td className="py-6 border-y border-white/20 dark:border-white/5">
+                                                                  <div className="flex items-center gap-3">
+                                                                      <div className="w-10 h-10 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-xs font-bold text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
+                                                                          {comprador?.nombre?.charAt(0) || "U"}
+                                                                      </div>
+                                                                      <span className="text-xs font-medium text-slate-700 dark:text-slate-300">{comprador?.nombre || "Usuario"}</span>
                                                                   </div>
-                                                          </td>
-                                                      </motion.tr>
-                                                 );
-                                             })}
-                                         </tbody>
-                                     </table>
-                                 </div>
+                                                              </td>
+                                                              
+                                                              {isQuickAssignMode ? (
+                                                                  <td className="py-6 border-y border-white/20 dark:border-white/5">
+                                                                      <div className="flex flex-wrap gap-3">
+                                                                          {membersData.map(member => {
+                                                                              const isAssigned = (pendingAssignments[act.id] || []).includes(member.id);
+                                                                              const memberColor = (member as any).color || "var(--primary)";
+                                                                              return (
+                                                                                  <motion.button
+                                                                                      whileHover={{ scale: 1.1, y: -2 }}
+                                                                                      whileTap={{ scale: 0.9 }}
+                                                                                      key={member.id}
+                                                                                      onClick={(e) => {
+                                                                                          e.stopPropagation();
+                                                                                          toggleMemberInItem(act.id, member.id);
+                                                                                      }}
+                                                                                      className={cn(
+                                                                                          "group/member relative flex flex-col items-center transition-all",
+                                                                                          !isAssigned && "opacity-25 grayscale hover:opacity-100 hover:grayscale-0"
+                                                                                      )}
+                                                                                      title={member.nombre}
+                                                                                  >
+                                                                                      <div className={cn(
+                                                                                          "w-12 h-12 rounded-2xl border-2 flex items-center justify-center text-sm font-black transition-all shadow-sm",
+                                                                                          isAssigned 
+                                                                                            ? "bg-white dark:bg-slate-900 shadow-md" 
+                                                                                            : "border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-400"
+                                                                                      )}
+                                                                                      style={isAssigned ? { borderColor: memberColor, color: memberColor } : {}}>
+                                                                                          {member.nombre.charAt(0)}
+                                                                                      </div>
+                                                                                      {isAssigned && (
+                                                                                          <motion.div 
+                                                                                            initial={{ scale: 0, rotate: -45 }}
+                                                                                            animate={{ scale: 1, rotate: 0 }}
+                                                                                            className="absolute -top-1.5 -right-1.5 w-6 h-6 rounded-full border-2 border-white dark:border-slate-900 flex items-center justify-center shadow-lg"
+                                                                                            style={{ backgroundColor: memberColor }}
+                                                                                          >
+                                                                                              <Check size={12} className="text-white stroke-[4]" />
+                                                                                          </motion.div>
+                                                                                      )}
+                                                                                      <span className="text-[7px] font-black uppercase mt-2 text-slate-500 opacity-0 group-hover/member:opacity-100 transition-opacity">
+                                                                                          {member.nombre.split(' ')[0]}
+                                                                                      </span>
+                                                                                  </motion.button>
+                                                                              );
+                                                                          })}
+                                                                      </div>
+                                                                  </td>
+                                                              ) : (
+                                                                  <>
+                                                                      <td className="py-6 border-y border-white/20 dark:border-white/5">
+                                                                          {(() => {
+                                                                              const rawVal = act.monto ?? act.precio ?? 0;
+                                                                              const numVal = Number(rawVal);
+                                                                              const finalMonto = isNaN(numVal) ? 0 : numVal;
+                                                                              return (
+                                                                                <span className="font-black text-xl font-mono tracking-tighter text-slate-800 dark:text-white">${finalMonto.toFixed(2)}</span>
+                                                                              );
+                                                                          })()}
+                                                                      </td>
+                                                                      <td className="py-6 border-y border-white/20 dark:border-white/5">
+                                                                          <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{act.fecha}</span>
+                                                                      </td>
+                                                                  </>
+                                                              )}
+                                                              
+                                                              <td className="py-6 pr-8 rounded-r-[2.5rem] border-y border-r border-white/20 dark:border-white/5 text-right">
+                                                                      <div className="flex justify-end items-center gap-5">
+                                                                         <div className={cn(
+                                                                             "flex items-center gap-2 px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-[0.2em] shadow-sm",
+                                                                             isFullyAssigned 
+                                                                                ? "bg-emerald-500/10 text-emerald-500 border border-emerald-500/20" 
+                                                                                : "bg-amber-500/10 text-amber-500 border border-amber-500/20"
+                                                                         )}>
+                                                                             {isFullyAssigned ? <CheckCircle size={14} /> : <AlertTriangle size={14} />}
+                                                                             <span className="hidden xl:inline">{isFullyAssigned ? "Liquidado" : "Pendiente"}</span>
+                                                                         </div>
+
+                                                                         {canWriteExpenses && !isQuickAssignMode && (
+                                                                             <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                                                 <button 
+                                                                                     onClick={(e) => {
+                                                                                         e.stopPropagation();
+                                                                                         e.preventDefault();
+                                                                                         setItemToEdit(act);
+                                                                                         setIsEditItemModalOpen(true);
+                                                                                     }}
+                                                                                     className="p-3 hover:bg-blue-500/10 rounded-2xl text-blue-400 hover:text-blue-500 transition-all"
+                                                                                     title="Editar"
+                                                                                 >
+                                                                                     <Pencil size={20} />
+                                                                                 </button>
+                                                                                 <button 
+                                                                                     onClick={(e) => {
+                                                                                         e.stopPropagation();
+                                                                                         e.preventDefault();
+                                                                                         if (window.confirm("¿Eliminar este gasto?")) {
+                                                                                             deleteItem(act.id);
+                                                                                         }
+                                                                                     }}
+                                                                                     className="p-3 hover:bg-rose-500/10 rounded-2xl text-rose-400 hover:text-rose-500 transition-all"
+                                                                                     title="Eliminar"
+                                                                                 >
+                                                                                     <Trash2 size={20} />
+                                                                                 </button>
+                                                                             </div>
+                                                                         )}
+                                                                         {!isQuickAssignMode && (
+                                                                             <button className="p-3 bg-slate-50 dark:bg-white/5 hover:bg-[var(--primary)]/10 rounded-2xl text-slate-400 hover:text-[var(--primary)] transition-all">
+                                                                                 <ArrowRight size={20} />
+                                                                             </button>
+                                                                         )}
+                                                                      </div>
+                                                              </td>
+                                                          </motion.tr>
+                                                     );
+                                                 })}
+                                             </tbody>
+                                         </table>
+                                     </div>
+                                 ) : (
+                                     <div className="py-20 text-center flex flex-col items-center justify-center border-2 border-dashed border-[var(--border-color)] rounded-[3rem] bg-[var(--bg-card)]/40 p-8 space-y-4">
+                                         <div className="w-16 h-16 rounded-full bg-[var(--primary)]/10 text-[var(--primary)] flex items-center justify-center mb-2">
+                                             <Receipt size={32} />
+                                         </div>
+                                         <h4 className="text-base font-black uppercase tracking-widest text-[var(--text-primary)]">
+                                             No hay gastos registrados
+                                         </h4>
+                                         <p className="text-xs font-bold text-slate-400 max-w-sm">
+                                             {canWriteExpenses 
+                                                 ? "Comienza añadiendo un nuevo gasto para calcular automáticamente los saldos de cada integrante." 
+                                                 : "Aún no se han registrado gastos en este grupo."}
+                                         </p>
+                                         {canWriteExpenses && (
+                                             <button
+                                                 onClick={() => navigate(ROUTES.REGISTER_EXPENSE(finalId))}
+                                                 className="inline-flex items-center gap-2 px-6 py-3 bg-[var(--primary)] text-white rounded-2xl text-xs font-black uppercase tracking-widest shadow-xl shadow-[var(--primary)]/20 hover:scale-105 active:scale-95 transition-all mt-2"
+                                             >
+                                                 <Plus size={16} /> Registrar Primer Gasto
+                                             </button>
+                                         )}
+                                     </div>
+                                 )}
                             </motion.div>
                         )}
 

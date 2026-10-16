@@ -7,7 +7,7 @@ RUN apt-get update && apt-get install -y gcc
 
 # Copiar requirements e instalar
 COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --default-timeout=120 --retries=5 --no-cache-dir -r requirements.txt
 
 # El código se monta por volumen en el docker-compose, 
 # así que no necesitamos copiarlo aquí para desarrollo.

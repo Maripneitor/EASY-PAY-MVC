@@ -13,10 +13,10 @@ export const useClipboard = () => {
                 duration: 2000
             });
             
-            // Reset icon after 2 seconds
+            // Reset icon after 1 second
             setTimeout(() => {
                 setCopiedId(null);
-            }, 2000);
+            }, 1000);
             
             return true;
         } catch (err) {

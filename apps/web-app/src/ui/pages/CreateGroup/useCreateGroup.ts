@@ -8,18 +8,28 @@ export const useCreateGroup = () => {
     const navigate = useNavigate();
     const [searchParams] = useSearchParams();
     const { user } = useAuthContext();
+    const userRoles = (user?.roles || ['Usuario Regular']).map((r: string) => r.toLowerCase());
+    const isAdmin = userRoles.includes('administrador') || userRoles.includes('admin');
+    const isEditor = userRoles.includes('editor');
+    const userPermissions = user?.permissions || [];
+    const canWriteGroups = isAdmin || isEditor || userPermissions.includes('groups:write');
+
     const tabParam = searchParams.get('tab');
-    const initialTab = (tabParam === 'unirse' || tabParam === 'join') ? 'unirse' : 'crear';
+    const initialTab = (!canWriteGroups || tabParam === 'unirse' || tabParam === 'join') ? 'unirse' : 'crear';
     
     const [activeTab, setActiveTab] = useState<'crear' | 'unirse'>(initialTab);
     const [loading, setLoading] = useState(false);
 
     // Actualizar tab si cambia el parámetro de búsqueda
     useEffect(() => {
+        if (!canWriteGroups) {
+            setActiveTab('unirse');
+            return;
+        }
         const tab = searchParams.get('tab');
         if (tab === 'unirse' || tab === 'join') setActiveTab('unirse');
         if (tab === 'crear' || tab === 'create') setActiveTab('crear');
-    }, [searchParams]);
+    }, [searchParams, canWriteGroups]);
 
     // Estados para CREAR
     const [groupName, setGroupName] = useState('');
@@ -29,6 +39,10 @@ export const useCreateGroup = () => {
     const [joinCode, setJoinCode] = useState('');
 
     const handleCreateGroup = async () => {
+        if (!canWriteGroups) {
+            alert("No tienes permisos para crear nuevos grupos. Tu rol permite unirte mediante código.");
+            return;
+        }
         if (!groupName) return alert("El nombre es obligatorio");
 
         const userId = user?.id;
@@ -96,6 +110,7 @@ export const useCreateGroup = () => {
 
     return {
         activeTab, setActiveTab,
+        canWriteGroups,
         groupName, setGroupName,
         groupDesc, setGroupDesc,
         joinCode, setJoinCode,

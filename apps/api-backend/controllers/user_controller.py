@@ -1,3 +1,4 @@
+import os
 import random
 import re
 from datetime import datetime, timedelta, timezone
@@ -33,7 +34,13 @@ class UserController(BaseController):
         self._email_service = EmailService()
         self._audit_service = AuditService()
 
-    async def register(self, data: UserCreate, ip_address: str = "127.0.0.1", user_agent: str = "Unknown") -> Dict[str, Any]:
+    async def register(
+        self,
+        data: UserCreate,
+        ip_address: str = "127.0.0.1",
+        user_agent: str = "Unknown",
+        background_tasks: Optional[Any] = None
+    ) -> Dict[str, Any]:
         """Registra un nuevo usuario con rol predeterminado 'Usuario Regular' y validación estricta"""
         nombre = sanitize_string(data.nombre)
         email = data.email.strip().lower()
@@ -80,9 +87,9 @@ class UserController(BaseController):
 
         # Enviar código de verificación de forma automática
         try:
-            await self.setup_2fa(user_id=user_id, email=email)
+            await self.setup_2fa(user_id=user_id, email=email, background_tasks=background_tasks)
         except Exception as e:
-            self.logger.warning(f"⚠️ Error al auto-enviar código OTP de registro: {e}")
+            self.logger.warning(f"[Auth] Error al auto-enviar codigo OTP de registro: {e}")
 
         return self.success(
             "Usuario registrado exitosamente. Se ha enviado un código de verificación.",
@@ -310,13 +317,19 @@ class UserController(BaseController):
             }
         )
 
-    async def setup_2fa(self, user_id: str, email: str, is_recovery: bool = False) -> Dict[str, Any]:
+    async def setup_2fa(
+        self,
+        user_id: str,
+        email: str,
+        is_recovery: bool = False,
+        background_tasks: Optional[Any] = None
+    ) -> Dict[str, Any]:
         """Genera un código OTP seguro y lo envía al correo"""
         code = str(random.randint(100000, 999999))
         expires_at = datetime.now(timezone.utc) + timedelta(minutes=10)
 
         await self._user_model.save_otp_code(user_id, code, expires_at)
-        await self._email_service.send_otp(email, code, is_recovery=is_recovery)
+        await self._email_service.send_otp(email, code, is_recovery=is_recovery, background_tasks=background_tasks)
 
         return self.success("Código de verificación enviado", user_id=user_id)
 
@@ -385,7 +398,12 @@ class UserController(BaseController):
             }
         )
 
-    async def request_password_reset(self, email: str, ip_address: str = "127.0.0.1") -> Dict[str, Any]:
+    async def request_password_reset(
+        self,
+        email: str,
+        ip_address: str = "127.0.0.1",
+        background_tasks: Optional[Any] = None
+    ) -> Dict[str, Any]:
         """Solicitud de restablecimiento de contraseña con prevención de enumeración"""
         email_clean = email.strip().lower()
         user = await self._user_model.find_by_identifier(email_clean)
@@ -394,7 +412,7 @@ class UserController(BaseController):
             return self.success("Si el correo está registrado, recibirás un código de recuperación.")
 
         user_id = str(user["_id"])
-        await self.setup_2fa(user_id, email_clean, is_recovery=True)
+        await self.setup_2fa(user_id, email_clean, is_recovery=True, background_tasks=background_tasks)
 
         await self._audit_service.log_access(
             action="PASSWORD_RESET_REQUESTED",

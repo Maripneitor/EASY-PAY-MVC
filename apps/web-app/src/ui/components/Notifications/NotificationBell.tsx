@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Bell, BellDot, X, Check, Trash2, Clock } from 'lucide-react';
+import { Bell, BellDot, X, Check, Trash2, Clock, DollarSign, Megaphone } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuthContext } from '../../context/AuthContext';
 import { httpClient } from '../../../infrastructure/api/http-client';
@@ -179,7 +179,13 @@ export const NotificationBell = () => {
                                                         "w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0",
                                                         !n.read ? "bg-[var(--primary)] text-white shadow-lg shadow-[var(--primary)]/20" : "bg-slate-100 text-slate-500"
                                                     )}>
-                                                        {n.type === 'payment_received' ? '💰' : (n.type === 'reminder' ? '⏰' : '📢')}
+                                                        {n.type === 'payment_received' ? (
+                                                            <DollarSign size={18} />
+                                                        ) : n.type === 'reminder' ? (
+                                                            <Clock size={18} />
+                                                        ) : (
+                                                            <Megaphone size={18} />
+                                                        )}
                                                     </div>
                                                     <div className="flex-1 min-w-0">
                                                         <p className="text-xs font-black text-[var(--text-primary)] uppercase tracking-tight mb-1">{n.title}</p>

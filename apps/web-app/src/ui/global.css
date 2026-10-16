@@ -160,12 +160,12 @@ body {
     }
 }
 
-/* --- 🚀 LÓGICA DE ESCALADO GLOBAL --- */
+/* --- LOGICA DE ESCALADO GLOBAL --- */
 html.font-small { font-size: 14px !important; }
 html.font-medium { font-size: 16px !important; }
 html.font-large { font-size: 20px !important; }
 
-/* --- 🛠️ SCROLL ADAPTABLE SOLO EN MODO GRANDE PARA LA CLASE ESPECÍFICA --- */
+/* --- SCROLL ADAPTABLE SOLO EN MODO GRANDE PARA LA CLASE ESPECIFICA --- */
 html.font-large .custom-scrollbar {
     overflow-y: auto !important;
 }

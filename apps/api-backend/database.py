@@ -17,9 +17,9 @@ load_dotenv(os.path.join(os.path.dirname(__file__), "../../env.template"))
 MONGO_URL = os.getenv("MONGO_URL") or os.getenv("MONGO_URI") or "mongodb://localhost:27017"
 
 if "mongodb+srv" not in MONGO_URL:
-    logger.warning("⚠️ ALERTA: No se detectó una conexión a MongoDB Atlas (Nube). Usando conexión local o fallback.")
+    logger.warning("[Database] No se detecto una conexion a MongoDB Atlas (Nube). Usando conexion local o fallback.")
 else:
-    logger.info("✅ Conexión a MongoDB Atlas detectada.")
+    logger.info("[Database] Conexion a MongoDB Atlas detectada.")
 
 class DatabaseConnector:
     def __init__(self):
@@ -27,7 +27,7 @@ class DatabaseConnector:
         if use_mock:
             try:
                 import mongomock_motor
-                logger.info("🧪 [DatabaseConnector] Inicializando cliente de base de datos en memoria (Mock DB).")
+                logger.info("[DatabaseConnector] Inicializando cliente de base de datos en memoria (Mock DB).")
                 self.client = mongomock_motor.AsyncMongoMockClient()
                 return
             except Exception as mock_err:
@@ -48,7 +48,7 @@ class DatabaseConnector:
                 **client_kwargs
             )
         except Exception as e:
-            logger.error(f"❌ Error crítico al inicializar el cliente de MongoDB: {str(e)}")
+            logger.error(f"[DatabaseConnector] Error critico al inicializar el cliente de MongoDB: {str(e)}")
             self.client = None
 
     def get_db(self, db_name: str = "EasyPay"):

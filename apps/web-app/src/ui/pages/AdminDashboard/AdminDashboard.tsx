@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { 
     Users, Shield, FileText, CheckCircle2, XCircle, AlertTriangle, 
-    Search, Plus, RefreshCw, Key, ShieldCheck, UserCheck, Lock, ChevronRight 
+    Search, Plus, RefreshCw, Key, ShieldCheck, UserCheck, Lock, ChevronRight, X 
 } from 'lucide-react';
 import { adminService, type AdminUser, type AdminRole, type AuditLogItem, type SystemMeta } from '@services/adminService';
 import { useAuthContext } from '@ui/context/AuthContext';
@@ -173,7 +173,9 @@ export const AdminDashboard: React.FC = () => {
                         : 'bg-red-500/10 text-red-600 border border-red-500/20'
                 }`}>
                     <span>{message.text}</span>
-                    <button onClick={() => setMessage(null)} className="text-xs opacity-70 hover:opacity-100">✕</button>
+                    <button onClick={() => setMessage(null)} className="p-1 rounded-lg opacity-70 hover:opacity-100 hover:bg-black/5 dark:hover:bg-white/5 transition-all">
+                        <X size={14} />
+                    </button>
                 </div>
             )}
 

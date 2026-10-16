@@ -12,10 +12,12 @@ import {
     Calendar,
     Hash,
     ShieldCheck,
-    Users
+    Users,
+    Check
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '../../../../infrastructure/utils';
+import { useClipboard } from '../../../hooks/useClipboard';
 
 interface TransactionDetailModalProps {
     isOpen: boolean;
@@ -27,10 +29,7 @@ interface TransactionDetailModalProps {
 export const TransactionDetailModal: React.FC<TransactionDetailModalProps> = ({ isOpen, onClose, transaction, members = [] }) => {
     if (!transaction) return null;
 
-    const copyToClipboard = (text: string, label: string) => {
-        navigator.clipboard.writeText(text);
-        toast.success(`${label} copiado`);
-    };
+    const { copyToClipboard, copiedId } = useClipboard();
 
     const handlePrint = () => {
         window.print();
@@ -128,14 +127,39 @@ export const TransactionDetailModal: React.FC<TransactionDetailModalProps> = ({ 
                             <div className="space-y-4">
                                 <div className="flex justify-between items-center group">
                                     <div>
-                                        <p className="text-[9px] font-black uppercase text-slate-400 tracking-widest">N.° de operación</p>
-                                        <p className="text-sm font-mono font-bold text-[var(--text-primary)]">{String(transaction.id || 'OP-' + Math.random().toString(36).substr(2, 9)).toUpperCase()}</p>
+                                         <p className="text-[9px] font-black uppercase text-slate-400 tracking-widest">N.° de operación</p>
+                                         <p className="text-sm font-mono font-bold text-[var(--text-primary)]">{String(transaction.id || 'OP-' + Math.random().toString(36).substr(2, 9)).toUpperCase()}</p>
                                     </div>
                                     <button 
                                         onClick={() => copyToClipboard(transaction.id || 'OP-74859623', 'N.° de operación')}
-                                        className="p-2 text-slate-400 hover:text-[var(--primary)] transition-all"
+                                        className="p-2 text-slate-400 hover:text-[var(--primary)] transition-all flex items-center justify-center min-w-[32px] min-h-[32px]"
+                                        aria-label="Copiar número de operación"
                                     >
-                                        <Copy size={16} />
+                                        <AnimatePresence mode="wait" initial={false}>
+                                            {copiedId === 'N.° de operación' ? (
+                                                <motion.span
+                                                    key="check"
+                                                    initial={{ opacity: 0, scale: 0.8 }}
+                                                    animate={{ opacity: 1, scale: 1 }}
+                                                    exit={{ opacity: 0, scale: 0.8 }}
+                                                    transition={{ duration: 0.15 }}
+                                                    className="text-emerald-500 inline-flex items-center"
+                                                >
+                                                    <Check size={16} className="stroke-[3]" />
+                                                </motion.span>
+                                            ) : (
+                                                <motion.span
+                                                    key="copy"
+                                                    initial={{ opacity: 0, scale: 0.8 }}
+                                                    animate={{ opacity: 1, scale: 1 }}
+                                                    exit={{ opacity: 0, scale: 0.8 }}
+                                                    transition={{ duration: 0.15 }}
+                                                    className="inline-flex items-center"
+                                                >
+                                                    <Copy size={16} />
+                                                </motion.span>
+                                            )}
+                                        </AnimatePresence>
                                     </button>
                                 </div>
 
@@ -148,14 +172,39 @@ export const TransactionDetailModal: React.FC<TransactionDetailModalProps> = ({ 
 
                                 <div className="flex justify-between items-center group">
                                     <div>
-                                        <p className="text-[9px] font-black uppercase text-slate-400 tracking-widest">Referencia</p>
-                                        <p className="text-sm font-bold text-[var(--text-primary)] uppercase">{transaction.category || 'Varios'}</p>
+                                         <p className="text-[9px] font-black uppercase text-slate-400 tracking-widest">Referencia</p>
+                                         <p className="text-sm font-bold text-[var(--text-primary)] uppercase">{transaction.category || 'Varios'}</p>
                                     </div>
                                     <button 
                                         onClick={() => copyToClipboard(transaction.category || 'Otros', 'Referencia')}
-                                        className="p-2 text-slate-400 hover:text-[var(--primary)] transition-all"
+                                        className="p-2 text-slate-400 hover:text-[var(--primary)] transition-all flex items-center justify-center min-w-[32px] min-h-[32px]"
+                                        aria-label="Copiar referencia"
                                     >
-                                        <Copy size={16} />
+                                        <AnimatePresence mode="wait" initial={false}>
+                                            {copiedId === 'Referencia' ? (
+                                                <motion.span
+                                                    key="check"
+                                                    initial={{ opacity: 0, scale: 0.8 }}
+                                                    animate={{ opacity: 1, scale: 1 }}
+                                                    exit={{ opacity: 0, scale: 0.8 }}
+                                                    transition={{ duration: 0.15 }}
+                                                    className="text-emerald-500 inline-flex items-center"
+                                                >
+                                                    <Check size={16} className="stroke-[3]" />
+                                                </motion.span>
+                                            ) : (
+                                                <motion.span
+                                                    key="copy"
+                                                    initial={{ opacity: 0, scale: 0.8 }}
+                                                    animate={{ opacity: 1, scale: 1 }}
+                                                    exit={{ opacity: 0, scale: 0.8 }}
+                                                    transition={{ duration: 0.15 }}
+                                                    className="inline-flex items-center"
+                                                >
+                                                    <Copy size={16} />
+                                                </motion.span>
+                                            )}
+                                        </AnimatePresence>
                                     </button>
                                 </div>
                             </div>

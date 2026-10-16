@@ -51,12 +51,12 @@ export const GroupCard: React.FC<GroupCardProps> = ({
     };
 
     const currencyFormatter = (val: number, compact = false) => {
-        const numVal = isNaN(val) ? 0 : val;
+        const numVal = isNaN(val) ? 0 : Math.abs(val);
         return new Intl.NumberFormat('es-MX', {
             style: 'currency',
             currency: 'MXN',
-            notation: compact && Math.abs(numVal) >= 100000 ? 'compact' : 'standard',
-            maximumFractionDigits: compact && Math.abs(numVal) >= 100000 ? 1 : 2,
+            notation: compact && numVal >= 100000 ? 'compact' : 'standard',
+            maximumFractionDigits: compact && numVal >= 100000 ? 1 : 2,
         }).format(numVal);
     };
 
@@ -111,23 +111,23 @@ export const GroupCard: React.FC<GroupCardProps> = ({
 
             <div className="flex flex-col gap-6">
                 {/* Header: Name (Left) | Actions + Admin (Right) */}
-                <div className="flex items-start justify-between gap-4">
-                    <div className="flex items-center gap-3 min-w-0">
+                <div className="flex items-center justify-between gap-3 w-full">
+                    <div className="flex items-center gap-3 min-w-0 flex-1">
                         <div className={cn(
-                            "flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-xs font-black shadow-sm border border-white/40 dark:border-slate-700/40",
+                            "flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-xs font-black shadow-sm border border-white/40 dark:border-slate-700/40",
                             appearance.bg,
                             appearance.color
                         )}>
                             {group.name.charAt(0).toUpperCase()}
                         </div>
-                        <h3 className="truncate text-lg font-bold text-slate-800 dark:text-white tracking-tight">
+                        <h3 className="truncate text-base md:text-lg font-bold text-slate-800 dark:text-white tracking-tight flex-1" title={group.name}>
                             {group.name}
                         </h3>
                     </div>
 
-                    <div className="flex items-center gap-2 shrink-0">
+                    <div className="flex items-center gap-2.5 shrink-0">
                         {!isSelectionMode && group.isAdmin && (
-                            <span className="px-2 py-0.5 bg-slate-200 dark:bg-white/10 rounded-md text-[8px] font-black uppercase tracking-widest text-slate-600 dark:text-slate-400">
+                            <span className="px-2.5 py-1 mr-1 bg-slate-200 dark:bg-white/10 rounded-md text-[8px] font-black uppercase tracking-widest text-slate-600 dark:text-slate-400">
                                 ADMIN
                             </span>
                         )}
@@ -192,7 +192,7 @@ export const GroupCard: React.FC<GroupCardProps> = ({
                             {hasDebt ? "Debes" : (hasCredit ? "A Favor" : "Tu Parte")}
                         </p>
                         <p 
-                            title={`${group.userBalance && group.userBalance > 0 ? "+" : ""}${balanceStr}`}
+                            title={`${hasCredit ? "+" : ""}${balanceStr}`}
                             className={cn(
                                 "font-bold font-mono whitespace-nowrap overflow-hidden text-ellipsis leading-tight",
                                 hasDebt ? "text-rose-600 dark:text-rose-400" : 
@@ -201,7 +201,7 @@ export const GroupCard: React.FC<GroupCardProps> = ({
                                 getFontSizeClass(balanceStr)
                             )}
                         >
-                            {group.userBalance && group.userBalance > 0 ? "+" : ""}{balanceStr}
+                            {hasCredit ? "+" : ""}{balanceStr}
                         </p>
                     </div>
                 </div>

@@ -60,6 +60,18 @@ app.add_middleware(
     allow_headers=["Authorization", "Content-Type", "Accept", "X-Requested-With"],
 )
 
+# ── Middleware de Seguridad y Hardening HTTP ─────────────────────────────────
+@app.middleware("http")
+async def security_headers_middleware(request: Request, call_next):
+    response = await call_next(request)
+    # Inyección de cabeceras de seguridad estrictas
+    response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains; preload"
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-Frame-Options"] = "DENY"
+    response.headers["X-XSS-Protection"] = "1; mode=block"
+    response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+    return response
+
 # ── Registro de Routers MVC ───────────────────────────────────────────────────
 app.include_router(user_router)
 app.include_router(admin_router)
@@ -75,24 +87,24 @@ async def startup_event():
     try:
         role_model = RoleModel()
         await role_model.seed_default_roles()
-        logger.info("🛡️ [RBAC] Roles predeterminados y permisos dinámicos listos en MongoDB.")
+        logger.info("[RBAC] Roles predeterminados y permisos dinamicos listos en MongoDB.")
     except Exception as e:
-        logger.warning(f"⚠️ [RBAC] Advertencia inicializando roles: {e}")
+        logger.warning(f"[RBAC] Advertencia inicializando roles: {e}")
 
     # Iniciar worker de recordatorios en segundo plano
     try:
         asyncio.create_task(reminder_worker())
-        logger.info("🚀 [EasyPay] Unified API iniciada con worker de recordatorios activo.")
+        logger.info("[EasyPay] Unified API iniciada con worker de recordatorios activo.")
     except Exception as e:
-        logger.warning(f"⚠️ Error iniciando worker de recordatorios: {e}")
+        logger.warning(f"Error iniciando worker de recordatorios: {e}")
 
 @app.get("/")
 def read_root():
     return {
-        "mensaje": "Bienvenido a la API REST de Easy-Pay (Arquitectura MVC + POO) 🐍",
+        "mensaje": "Bienvenido a la API REST de Easy-Pay (Arquitectura MVC + POO)",
         "docs": "/docs",
         "status": "active",
-        "security": "JWT + RBAC + Audit Trail + Rate Limiting + Bcrypt",
+        "security": "JWT + RBAC + Audit Trail + Rate Limiting + Bcrypt + Security Headers",
         "version": "2.0.0"
     }
 
@@ -113,11 +125,11 @@ async def global_exception_handler(request: Request, exc: Exception):
     logger.error(f"Internal Exception on {request.method} {request.url.path}: {str(exc)}")
     logger.error(traceback.format_exc())
 
-    # Respuesta genérica y limpia al cliente sin exponer secretos, código ni estructura interna
+    # Respuesta generica y limpia al cliente sin exponer secretos, codigo ni estructura interna
     return JSONResponse(
         status_code=500,
         content={
-            "detail": "Ha ocurrido un error interno en el servidor. Por favor, intente nuevamente más tarde.",
+            "detail": "Ha ocurrido un error interno en el servidor. Por favor, intente nuevamente mas tarde.",
             "status": "error"
         }
     )

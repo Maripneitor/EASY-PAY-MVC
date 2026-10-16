@@ -1,5 +1,5 @@
 import React from 'react';
-import { PlusCircle, Users, Store, QrCode } from 'lucide-react';
+import { PlusCircle, Users, Store, QrCode, Lightbulb } from 'lucide-react';
 import styles from './Hero.module.css';
 import { cn } from '../../../infrastructure/utils';
 
@@ -49,7 +49,9 @@ export const Hero = () => {
                     </div>
 
                     <div className={styles.hint}>
-                        <span className={styles.hintEmoji}>💡</span>
+                        <span className={styles.hintEmoji}>
+                            <Lightbulb size={18} />
+                        </span>
                         <p className={styles.hintText}>
                             El anfitrión crea el grupo y comparte el código.
                         </p>
