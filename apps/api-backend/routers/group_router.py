@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, Depends, BackgroundTasks, WebSocket, WebSocketDisconnect
+from fastapi import APIRouter, HTTPException, Depends, BackgroundTasks, WebSocket, WebSocketDisconnect, Request
 from typing import Optional, List, Dict, Any
 import httpx
 import os
@@ -6,6 +6,7 @@ import json
 
 from controllers.group_controller import GroupController
 from schemas.group_schema import GroupCreate, GroupJoin, ItemCreate, ItemUpdate, SettlementCreate
+from schemas.invitation_schema import InvitationCreate, InvitationResponse
 from core.permissions import get_current_user_id, require_permission, get_current_user_with_permissions
 
 group_router = APIRouter(prefix="/api/groups", tags=["Groups"], redirect_slashes=False)
@@ -63,7 +64,25 @@ async def create_group(group_data: GroupCreate, user: dict = Depends(get_current
 async def join_group(data: GroupJoin, current_user_id: str = Depends(get_current_user_id)):
     result = await controller.join_group(data.codigo, current_user_id)
     if controller.is_error(result):
-        raise HTTPException(status_code=400, detail=result.get("message"))
+        code = result.get("code")
+        status_code = 404 if code == "NOT_FOUND" else (409 if code == "ALREADY_MEMBER" else 400)
+        raise HTTPException(
+            status_code=status_code, 
+            detail={
+                "message": result.get("message"), 
+                "code": code,
+                "group_id": result.get("group_id")
+            }
+        )
+
+    # Notificar a los integrantes conectados en tiempo real por WebSocket
+    group_id = result.get("group_id")
+    if group_id:
+        await manager.broadcast(group_id, {
+            "type": "USER_JOINED", 
+            "user_id": current_user_id,
+            "group_id": group_id
+        })
     return result
 
 @group_router.get("/user/{user_id}", dependencies=[Depends(require_permission("groups:read"))])
@@ -71,6 +90,95 @@ async def get_user_groups(user_id: str, current_user_id: str = Depends(get_curre
     if user_id != current_user_id:
         raise HTTPException(status_code=403, detail="No autorizado para consultar grupos de otro usuario")
     return await controller.get_user_groups(user_id)
+
+# ── Rutas de Invitaciones a Grupos ───────────────────────────────────────────
+@group_router.get("/invitations/pending", dependencies=[Depends(require_permission("groups:read"))])
+async def get_my_pending_invitations(user: dict = Depends(get_current_user_with_permissions)):
+    user_email = user.get("email", "")
+    if not user_email:
+        return []
+    return await controller.get_user_pending_invitations(user_email)
+
+@group_router.post("/invitations/{invitation_id}/accept", dependencies=[Depends(require_permission("groups:read"))])
+async def accept_group_invitation(
+    invitation_id: str,
+    user: dict = Depends(get_current_user_with_permissions)
+):
+    current_user_id = user["id"]
+    current_user_email = user.get("email")
+    result = await controller.accept_invitation(invitation_id, current_user_id, current_user_email)
+    if controller.is_error(result):
+        code = result.get("code")
+        status_code = 404 if code == "NOT_FOUND" else (
+            403 if code == "FORBIDDEN" else 400
+        )
+        raise HTTPException(status_code=status_code, detail=result.get("message"))
+    
+    group_id = result.get("group_id")
+    if group_id:
+        await manager.broadcast(group_id, {
+            "type": "USER_JOINED",
+            "user_id": current_user_id,
+            "group_id": group_id
+        })
+    return result
+
+@group_router.post("/invitations/{invitation_id}/reject", dependencies=[Depends(require_permission("groups:read"))])
+async def reject_group_invitation(
+    invitation_id: str,
+    user: dict = Depends(get_current_user_with_permissions)
+):
+    current_user_id = user["id"]
+    current_user_email = user.get("email")
+    result = await controller.reject_invitation(invitation_id, current_user_id, current_user_email)
+    if controller.is_error(result):
+        code = result.get("code")
+        status_code = 404 if code == "NOT_FOUND" else (
+            403 if code == "FORBIDDEN" else 400
+        )
+        raise HTTPException(status_code=status_code, detail=result.get("message"))
+    return result
+
+@group_router.delete("/invitations/{invitation_id}", dependencies=[Depends(require_permission("groups:write"))])
+@group_router.post("/invitations/{invitation_id}/cancel", dependencies=[Depends(require_permission("groups:write"))])
+async def cancel_group_invitation(
+    invitation_id: str,
+    user: dict = Depends(get_current_user_with_permissions)
+):
+    current_user_id = user["id"]
+    result = await controller.cancel_invitation(invitation_id, current_user_id)
+    if controller.is_error(result):
+        code = result.get("code")
+        status_code = 404 if code == "NOT_FOUND" else (
+            403 if code == "FORBIDDEN" else 400
+        )
+        raise HTTPException(status_code=status_code, detail=result.get("message"))
+
+    group_id = result.get("group_id")
+    if group_id:
+        await manager.broadcast(group_id, {
+            "type": "INVITATION_CANCELLED",
+            "invitation_id": invitation_id,
+            "group_id": group_id
+        })
+    return result
+
+@group_router.post("/invitations/{invitation_id}/resend", dependencies=[Depends(require_permission("groups:write"))])
+async def resend_group_invitation(
+    invitation_id: str,
+    request: Request,
+    user: dict = Depends(get_current_user_with_permissions)
+):
+    current_user_id = user["id"]
+    origin_header = request.headers.get("origin") or request.headers.get("referer")
+    result = await controller.resend_invitation(invitation_id, current_user_id, origin_header)
+    if controller.is_error(result):
+        code = result.get("code")
+        status_code = 404 if code == "NOT_FOUND" else (
+            403 if code == "FORBIDDEN" else 400
+        )
+        raise HTTPException(status_code=status_code, detail=result.get("message"))
+    return result
 
 @group_router.get("/{group_id}", dependencies=[Depends(require_permission("groups:read"))])
 async def get_group(group_id: str, current_user_id: str = Depends(get_current_user_id)):
@@ -104,16 +212,93 @@ async def delete_group(group_id: str, current_user_id: str = Depends(get_current
         raise HTTPException(status_code=400, detail=result.get("message"))
     return result
 
-# ── Rutas de Integrantes ──────────────────────────────────────────────────────
+# ── Rutas de Integrantes e Invitaciones ───────────────────────────────────────
+@group_router.post("/{group_id}/invite", dependencies=[Depends(require_permission("groups:write"))])
+async def invite_member_to_group(
+    group_id: str,
+    payload: InvitationCreate,
+    background_tasks: BackgroundTasks,
+    request: Request,
+    user: dict = Depends(get_current_user_with_permissions)
+):
+    current_user_id = user["id"]
+    origin_header = request.headers.get("origin") or request.headers.get("referer")
+    result = await controller.invite_member(
+        group_id=group_id,
+        email=payload.email,
+        current_user_id=current_user_id,
+        background_tasks=background_tasks,
+        origin_url=origin_header
+    )
+    if controller.is_error(result):
+        code = result.get("code")
+        status_code = 409 if code in ("ALREADY_MEMBER", "INVITATION_ALREADY_PENDING") else (
+            404 if code == "NOT_FOUND" else 400
+        )
+        raise HTTPException(status_code=status_code, detail=result.get("message"))
+    
+    await manager.broadcast(group_id, {
+        "type": "INVITATION_SENT",
+        "email": payload.email,
+        "group_id": group_id
+    })
+    return result
+
+@group_router.get("/{group_id}/invitations", dependencies=[Depends(require_permission("groups:read"))])
+async def get_group_invitations(group_id: str, current_user_id: str = Depends(get_current_user_id)):
+    return await controller.get_group_invitations(group_id)
+
 @group_router.post("/{group_id}/members", dependencies=[Depends(require_permission("groups:write"))])
-async def add_member(group_id: str, payload: dict, current_user_id: str = Depends(get_current_user_id)):
-    new_user_id = payload.get("user_id")
-    if not new_user_id:
-        raise HTTPException(status_code=400, detail="user_id es requerido")
-    success = await controller._group_model.add_member(group_id, new_user_id)
-    if success:
-        return {"status": "success", "message": "Integrante agregado correctamente"}
-    raise HTTPException(status_code=400, detail="No se pudo agregar el integrante")
+async def add_member(
+    group_id: str,
+    payload: dict,
+    background_tasks: BackgroundTasks,
+    request: Request,
+    user: dict = Depends(get_current_user_with_permissions)
+):
+    """
+    Ruta para agregar integrantes al grupo.
+    Por regla de consentimiento, NO inserta de inmediato al usuario en integrantes:
+    crea una invitación en estado PENDING y dispara el doble canal (Correo + Notificación).
+    """
+    target_email = payload.get("email")
+    target_user_id = payload.get("user_id")
+
+    if not target_email and target_user_id:
+        target_user = await controller._user_model.get_user_by_id(target_user_id)
+        if not target_user:
+            raise HTTPException(status_code=404, detail="Usuario no encontrado")
+        target_email = target_user.get("email")
+
+    if not target_email:
+        raise HTTPException(status_code=400, detail="Se requiere user_id o email válido para invitar")
+
+    current_user_id = user["id"]
+    origin_header = request.headers.get("origin") or request.headers.get("referer")
+    result = await controller.invite_member(
+        group_id=group_id,
+        email=target_email,
+        current_user_id=current_user_id,
+        background_tasks=background_tasks,
+        origin_url=origin_header
+    )
+    if controller.is_error(result):
+        code = result.get("code")
+        status_code = 409 if code in ("ALREADY_MEMBER", "INVITATION_ALREADY_PENDING") else (
+            404 if code == "NOT_FOUND" else 400
+        )
+        raise HTTPException(status_code=status_code, detail=result.get("message"))
+
+    await manager.broadcast(group_id, {
+        "type": "INVITATION_SENT",
+        "email": target_email,
+        "group_id": group_id
+    })
+    return {
+        "status": "success",
+        "message": "Invitación enviada. El usuario aparecerá como pendiente hasta que acepte.",
+        "data": result.get("invitation")
+    }
 
 @group_router.delete("/{group_id}/members/{user_id}")
 async def remove_member(group_id: str, user_id: str, current_user_id: str = Depends(get_current_user_id)):

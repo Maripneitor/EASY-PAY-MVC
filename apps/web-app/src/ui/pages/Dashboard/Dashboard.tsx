@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useOutletContext } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useDashboard } from './useDashboard';
 import { useAuthContext } from '@ui/context/AuthContext';
 import { useDocumentTitle } from '@ui/hooks/useDocumentTitle';
@@ -14,14 +15,20 @@ import {
     ArrowUpRight, 
     ReceiptText,
     UserPlus,
-    Check
+    Check,
+    Trash2
 } from 'lucide-react';
 import { cn, toTitleCase } from '@infrastructure/utils';
 import { ROUTES } from '@infrastructure/routes';
 import { PageHeader } from '@ui/components/PageHeader/PageHeader';
 import { GroupCard } from './components/GroupCard';
 import { TwoFactorModal } from '@ui/components/Security/TwoFactorModal';
+import { EditGroupModal } from '../Groups/components/EditGroupModal';
 import { generateFinancialReport } from '@infrastructure/services/PdfService';
+import { RecentActivitySection } from './components/RecentActivitySection';
+import { EmptyGroupsState } from './components/EmptyGroupsState';
+import { QuickActions } from './components/QuickActions';
+import { NotificationBell } from '@ui/components/Notifications/NotificationBell';
 
 // ─── Componente Skeleton Profesional de Carga ────────────────────────────────
 const DashboardSkeleton: React.FC = () => {
@@ -127,7 +134,11 @@ export const Dashboard: React.FC = () => {
     const welcomeTitle = `${I18N_TEXTS.WELCOME_PREFIX} ${capitalizedFirstName}`;
     
     const userRoles = (user?.roles || ['Usuario Regular']).map((r: string) => r.toLowerCase());
-    const canCreateGroup = userRoles.includes('administrador') || userRoles.includes('admin') || userRoles.includes('editor') || (user?.permissions || []).includes('groups:write');
+    const canCreateGroup = userRoles.includes('administrador') || userRoles.includes('admin') || userRoles.includes('editor') || userRoles.includes('usuario regular') || userRoles.includes('usuario') || (user?.permissions || []).includes('groups:write');
+
+    const [editingGroup, setEditingGroup] = useState<any>(null);
+    const [groupToDeleteConfirm, setGroupToDeleteConfirm] = useState<{ id: string; name: string } | null>(null);
+    const [isDeleting, setIsDeleting] = useState(false);
 
     const getAppearance = (name: string) => {
         const hash = name.split('').reduce((acc, char) => char.charCodeAt(0) + acc, 0);
@@ -139,10 +150,16 @@ export const Dashboard: React.FC = () => {
         };
     };
 
-    const handleDelete = async (e: React.MouseEvent, groupId: string) => {
+    const handleDelete = (e: React.MouseEvent, groupId: string, groupName: string) => {
         e.stopPropagation();
         e.preventDefault();
-        await deleteGroup(groupId);
+        setGroupToDeleteConfirm({ id: groupId, name: groupName });
+    };
+
+    const handleEdit = (e: React.MouseEvent, group: any) => {
+        e.stopPropagation();
+        e.preventDefault();
+        setEditingGroup(group);
     };
 
     const formatCurrency = (amount: number) => {
@@ -150,63 +167,81 @@ export const Dashboard: React.FC = () => {
     };
 
     return (
-        <div className="min-h-screen bg-[var(--bg-body)] pb-20 transition-colors duration-300 font-display text-[var(--text-primary)] md:flex md:pb-0">
+        <div className="flex flex-col flex-1 min-w-0 transition-colors duration-300 font-display text-[var(--text-primary)]">
             <div className="relative flex min-w-0 flex-1 flex-col">
-                <PageHeader
-                    onMenuClick={toggleSidebar}
-                    title={welcomeTitle}
-                    subtitle={I18N_TEXTS.SUBTITLE}
-                    showStats
-                />
+                {/* Header en escritorio (en móvil el layout ya provee el header superior fijo e independiente) */}
+                <div className="hidden md:block">
+                    <PageHeader
+                        onMenuClick={toggleSidebar}
+                        title={welcomeTitle}
+                        subtitle={I18N_TEXTS.SUBTITLE}
+                        rightSlot={<NotificationBell />}
+                        showStats
+                    />
+                </div>
 
-                <main className="relative flex-grow px-4 py-8 md:px-8 max-w-7xl mx-auto w-full">
+                {/* Saludo específico para móvil, integrado directamente en el flujo del contenido sin competir con barras */}
+                <div className="md:hidden mb-2">
+                    <h1 className="text-2xl font-black text-[var(--text-primary)] tracking-tight">
+                        {welcomeTitle}
+                    </h1>
+                    <p className="text-xs font-semibold text-[var(--text-secondary)] mt-0.5">
+                        Resumen de tus cuentas y movimientos
+                    </p>
+                </div>
+
+                <div className="relative flex-grow py-4 md:py-8 max-w-7xl mx-auto w-full">
                     {/* Background decorative elements */}
                     <div className="pointer-events-none absolute -left-[10%] -top-[20%] h-[500px] w-[500px] rounded-full bg-[var(--primary)]/5 blur-[120px]" />
                     <div className="pointer-events-none absolute -right-[10%] bottom-[10%] h-[400px] w-[400px] rounded-full bg-emerald-500/5 blur-[100px]" />
 
                     <div className="relative z-10 space-y-8">
                         
-                        {/* --- DASHBOARD STATS (Expanded Desktop View) --- */}
-                        <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                            <div className="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-3xl p-6 shadow-sm">
-                                <div className="flex justify-between items-start gap-4 mb-5">
-                                    <div className="p-3 bg-blue-500/10 rounded-2xl text-blue-500 shrink-0">
-                                        <Wallet size={24} />
+                        {/* --- DASHBOARD STATS (Responsive Grid & Hierarchy) --- */}
+                        <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                            <div className="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-3xl p-5 sm:p-6 shadow-sm min-w-0">
+                                <div className="flex justify-between items-start gap-3 mb-4">
+                                    <div className="p-2.5 sm:p-3 bg-blue-500/10 rounded-2xl text-blue-500 shrink-0">
+                                        <Wallet size={22} className="sm:w-6 sm:h-6" />
                                     </div>
-                                    <span className="text-[10px] font-black uppercase tracking-widest text-emerald-500 flex items-center gap-1.5 bg-emerald-500/10 px-3 py-1.5 rounded-full shrink-0 ml-auto shadow-sm">
+                                    <span className="hidden xs:inline-flex sm:inline-flex text-[10px] font-black uppercase tracking-widest text-emerald-500 items-center gap-1.5 bg-emerald-500/10 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-full shrink-0 ml-auto shadow-sm">
                                         <TrendingUp size={12} /> {stats?.groups_count || 0} {I18N_TEXTS.STATS.GROUPS_LABEL}
                                     </span>
                                 </div>
-                                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-[var(--text-secondary)] mb-1">{I18N_TEXTS.STATS.TOTAL_SPENT}</p>
-                                <h3 className="text-3xl font-black">${formatCurrency(stats?.total_spent || 0)}</h3>
+                                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-[var(--text-secondary)] mb-1 truncate">{I18N_TEXTS.STATS.TOTAL_SPENT}</p>
+                                <h3 className="text-2xl sm:text-3xl font-black text-[var(--text-primary)] truncate tracking-tight" title={`$${formatCurrency(stats?.total_spent || 0)}`}>
+                                    ${formatCurrency(stats?.total_spent || 0)}
+                                </h3>
                             </div>
 
-                            <div className="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-3xl p-6 shadow-sm">
-                                <div className="flex justify-between items-start gap-4 mb-5">
-                                    <div className="p-3 bg-emerald-500/10 rounded-2xl text-emerald-500 shrink-0">
-                                        <TrendingUp size={24} />
+                            <div className="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-3xl p-5 sm:p-6 shadow-sm min-w-0">
+                                <div className="flex justify-between items-start gap-3 mb-4">
+                                    <div className="p-2.5 sm:p-3 bg-emerald-500/10 rounded-2xl text-emerald-500 shrink-0">
+                                        <TrendingUp size={22} className="sm:w-6 sm:h-6" />
                                     </div>
-                                    <span className="text-[10px] font-black uppercase tracking-widest text-[var(--text-secondary)] opacity-50 bg-black/5 dark:bg-white/5 px-3 py-1.5 rounded-full shrink-0 ml-auto">
+                                    <span className="hidden xs:inline-flex sm:inline-flex text-[10px] font-black uppercase tracking-widest text-[var(--text-secondary)] opacity-50 bg-black/5 dark:bg-white/5 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-full shrink-0 ml-auto">
                                         {I18N_TEXTS.STATS.SALDOS}
                                     </span>
                                 </div>
-                                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-[var(--text-secondary)] mb-1">{I18N_TEXTS.STATS.OWED_TO_USER}</p>
-                                <h3 className="text-3xl font-black text-emerald-500">${formatCurrency(stats?.owed_to_user || 0)}</h3>
+                                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-[var(--text-secondary)] mb-1 truncate">{I18N_TEXTS.STATS.OWED_TO_USER}</p>
+                                <h3 className="text-2xl sm:text-3xl font-black text-emerald-500 truncate tracking-tight" title={`$${formatCurrency(stats?.owed_to_user || 0)}`}>
+                                    ${formatCurrency(stats?.owed_to_user || 0)}
+                                </h3>
                             </div>
 
                             {(() => {
                                 const owesDebt = (stats?.user_owes || 0) > 0.009;
                                 return (
-                                    <div className="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-3xl p-6 shadow-sm">
-                                        <div className="flex justify-between items-start gap-4 mb-5">
+                                    <div className="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-3xl p-5 sm:p-6 shadow-sm min-w-0">
+                                        <div className="flex justify-between items-start gap-3 mb-4">
                                             <div className={cn(
-                                                "p-3 rounded-2xl shrink-0 transition-colors",
+                                                "p-2.5 sm:p-3 rounded-2xl shrink-0 transition-colors",
                                                 owesDebt ? "bg-rose-500/10 text-rose-500" : "bg-slate-500/10 text-slate-500 dark:text-slate-400"
                                             )}>
-                                                {owesDebt ? <TrendingDown size={24} /> : <Check size={24} />}
+                                                {owesDebt ? <TrendingDown size={22} className="sm:w-6 sm:h-6" /> : <Check size={22} className="sm:w-6 sm:h-6" />}
                                             </div>
                                             <span className={cn(
-                                                "text-[10px] font-black uppercase tracking-widest flex items-center gap-1.5 px-3 py-1.5 rounded-full shrink-0 ml-auto shadow-sm",
+                                                "hidden xs:inline-flex sm:inline-flex text-[10px] font-black uppercase tracking-widest items-center gap-1.5 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-full shrink-0 ml-auto shadow-sm",
                                                 owesDebt ? "bg-rose-500/10 text-rose-500" : "bg-slate-500/10 text-slate-500 dark:text-slate-400"
                                             )}>
                                                 {owesDebt ? (
@@ -220,27 +255,27 @@ export const Dashboard: React.FC = () => {
                                                 )}
                                             </span>
                                         </div>
-                                        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-[var(--text-secondary)] mb-1">{I18N_TEXTS.STATS.USER_OWES}</p>
+                                        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-[var(--text-secondary)] mb-1 truncate">{I18N_TEXTS.STATS.USER_OWES}</p>
                                         <h3 className={cn(
-                                            "text-3xl font-black transition-colors",
+                                            "text-2xl sm:text-3xl font-black transition-colors truncate tracking-tight",
                                             owesDebt ? "text-rose-500" : "text-slate-700 dark:text-slate-300"
-                                        )}>
+                                        )} title={`$${formatCurrency(stats?.user_owes || 0)}`}>
                                             ${formatCurrency(stats?.user_owes || 0)}
                                         </h3>
                                     </div>
                                 );
                             })()}
 
-                            <div className="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-3xl p-6 shadow-sm">
-                                <div className="flex justify-between items-start gap-4 mb-5">
-                                    <div className="p-3 bg-violet-500/10 rounded-2xl text-violet-500 shrink-0">
-                                        <Users size={24} />
+                            <div className="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-3xl p-5 sm:p-6 shadow-sm min-w-0">
+                                <div className="flex justify-between items-start gap-3 mb-4">
+                                    <div className="p-2.5 sm:p-3 bg-violet-500/10 rounded-2xl text-violet-500 shrink-0">
+                                        <Users size={22} className="sm:w-6 sm:h-6" />
                                     </div>
                                     <div className="flex gap-2 shrink-0 ml-auto">
                                         {canCreateGroup && (
                                             <button 
                                                 onClick={() => navigate(ROUTES.CREATE_GROUP)} 
-                                                className="p-2.5 bg-[var(--primary)] text-white rounded-xl shadow-md shadow-[var(--primary)]/20 transition-all duration-200 hover:scale-105 hover:shadow-md active:scale-95"
+                                                className="p-2 sm:p-2.5 bg-[var(--primary)] text-white rounded-xl shadow-md shadow-[var(--primary)]/20 transition-transform duration-150 ease-out hover:scale-105 active:scale-95 cursor-pointer"
                                                 title={I18N_TEXTS.ACTIONS.CREATE_GROUP}
                                             >
                                                 <Plus size={16} />
@@ -248,15 +283,17 @@ export const Dashboard: React.FC = () => {
                                         )}
                                         <button 
                                             onClick={() => navigate(`${ROUTES.CREATE_GROUP}?tab=join`)} 
-                                            className="p-2.5 bg-emerald-500 text-white rounded-xl shadow-md shadow-emerald-500/20 transition-all duration-200 hover:scale-105 hover:shadow-md active:scale-95"
+                                            className="p-2 sm:p-2.5 bg-emerald-500 text-white rounded-xl shadow-md shadow-emerald-500/20 transition-transform duration-150 ease-out hover:scale-105 active:scale-95 cursor-pointer"
                                             title={I18N_TEXTS.ACTIONS.JOIN_GROUP}
                                         >
                                             <UserPlus size={16} />
                                         </button>
                                     </div>
                                 </div>
-                                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-[var(--text-secondary)] mb-1">{I18N_TEXTS.STATS.ACTIVE_GROUPS}</p>
-                                <h3 className="text-3xl font-black">{allActiveGroups.length}</h3>
+                                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-[var(--text-secondary)] mb-1 truncate">{I18N_TEXTS.STATS.ACTIVE_GROUPS}</p>
+                                <h3 className="text-2xl sm:text-3xl font-black truncate tracking-tight" title={allActiveGroups.length.toString()}>
+                                    {allActiveGroups.length}
+                                </h3>
                             </div>
                         </section>
                         
@@ -298,25 +335,30 @@ export const Dashboard: React.FC = () => {
                                                         key={group.id}
                                                         group={mappedGroup}
                                                         onClick={() => navigate(ROUTES.GROUP_DETAIL(group.id))}
-                                                        onDelete={mappedGroup.isAdmin ? (e) => handleDelete(e, group.id) : undefined}
+                                                        onDelete={mappedGroup.isAdmin ? (e) => handleDelete(e, group.id, mappedGroup.name) : undefined}
+                                                        onEdit={mappedGroup.isAdmin ? (e) => handleEdit(e, group) : undefined}
                                                         appearance={appearance}
                                                     />
                                                 );
                                             })
                                         ) : (
-                                            <div className="col-span-full py-20 text-center border-4 border-dashed border-[var(--border-color)] rounded-[3rem] opacity-40">
-                                                <Users size={48} className="mx-auto mb-4" />
-                                                <p className="text-sm font-black uppercase tracking-widest">{I18N_TEXTS.GROUPS.NO_GROUPS}</p>
-                                                <button 
-                                                    onClick={() => navigate(canCreateGroup ? ROUTES.CREATE_GROUP : `${ROUTES.CREATE_GROUP}?tab=join`)}
-                                                    className="mt-4 text-[var(--primary)] font-bold text-xs uppercase tracking-widest hover:underline"
-                                                >
-                                                    {canCreateGroup ? I18N_TEXTS.ACTIONS.CREATE_FIRST : I18N_TEXTS.ACTIONS.JOIN_FIRST}
-                                                </button>
-                                            </div>
+                                            <EmptyGroupsState
+                                                canCreateGroup={canCreateGroup}
+                                                onCreateGroup={() => navigate(ROUTES.CREATE_GROUP)}
+                                                onJoinGroup={() => navigate(`${ROUTES.CREATE_GROUP}?tab=join`)}
+                                            />
                                         )}
                                     </div>
                                 )}
+
+                                {/* --- RECENT ACTIVITY SECTION (debajo de Mis Grupos) --- */}
+                                <div className="mt-8">
+                                    <RecentActivitySection 
+                                        transactions={transactions} 
+                                        isLoading={isLoading}
+                                        onViewAll={() => navigate(ROUTES.STATS)}
+                                    />
+                                </div>
                             </section>
 
                             {/* --- ACTIVITY & ANALYTICS (Side Area) --- */}
@@ -374,7 +416,7 @@ export const Dashboard: React.FC = () => {
                                     <p className="text-white/70 text-sm font-medium mb-6">{I18N_TEXTS.OCR_CARD.DESCRIPTION}</p>
                                     <button 
                                         onClick={() => navigate(ROUTES.OCR_SCANNER)}
-                                        className="bg-white text-[var(--primary)] px-6 py-3 rounded-xl font-black text-xs uppercase tracking-widest shadow-xl transition-all duration-200 hover:scale-105 hover:shadow-md active:scale-95"
+                                        className="bg-white text-[var(--primary)] px-6 py-3 rounded-xl font-black text-xs uppercase tracking-widest shadow-xl transition-transform duration-150 ease-out hover:scale-105 hover:shadow-md active:scale-95 cursor-pointer"
                                     >
                                         {I18N_TEXTS.ACTIONS.UPLOAD_FILE}
                                     </button>
@@ -382,8 +424,77 @@ export const Dashboard: React.FC = () => {
                             </section>
                         </div>
                     </div>
-                </main>
+                </div>
             </div>
+
+            <EditGroupModal
+                isOpen={!!editingGroup}
+                onClose={() => setEditingGroup(null)}
+                group={editingGroup}
+            />
+
+            {/* Modal de Confirmación Limpio de Eliminación */}
+            <AnimatePresence>
+                {groupToDeleteConfirm && (
+                    <div className="fixed inset-0 z-[110] flex items-center justify-center p-4">
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            onClick={() => !isDeleting && setGroupToDeleteConfirm(null)}
+                            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+                        />
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.95, y: 16 }}
+                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                            exit={{ opacity: 0, scale: 0.95, y: 16 }}
+                            transition={{ duration: 0.18, ease: "easeOut" }}
+                            className="relative w-full max-w-md bg-[#0f172a] rounded-3xl border border-rose-500/30 p-6 sm:p-8 shadow-2xl text-center space-y-6 overflow-hidden"
+                        >
+                            <div className="w-14 h-14 rounded-2xl bg-rose-500/10 text-rose-500 border border-rose-500/20 flex items-center justify-center mx-auto shadow-sm">
+                                <Trash2 size={26} />
+                            </div>
+
+                            <div className="space-y-2">
+                                <h3 className="text-xl font-black text-white uppercase tracking-tight">
+                                    ¿Eliminar este grupo?
+                                </h3>
+                                <p className="text-xs text-slate-400 font-medium leading-relaxed">
+                                    Estás a punto de eliminar <span className="text-white font-bold">"{groupToDeleteConfirm.name}"</span>. Esta acción es irreversible y eliminará todos los gastos y balances asociados.
+                                </p>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-3 pt-2">
+                                <button
+                                    type="button"
+                                    disabled={isDeleting}
+                                    onClick={() => setGroupToDeleteConfirm(null)}
+                                    className="py-3 px-4 bg-slate-800 hover:bg-slate-700 active:scale-95 text-slate-200 rounded-2xl text-xs font-black uppercase tracking-wider transition-colors duration-150 border border-slate-700 disabled:opacity-50 cursor-pointer"
+                                >
+                                    Cancelar
+                                </button>
+                                <button
+                                    type="button"
+                                    disabled={isDeleting}
+                                    onClick={async () => {
+                                        setIsDeleting(true);
+                                        try {
+                                            const id = groupToDeleteConfirm.id;
+                                            setGroupToDeleteConfirm(null);
+                                            await deleteGroup(id);
+                                        } finally {
+                                            setIsDeleting(false);
+                                        }
+                                    }}
+                                    className="py-3 px-4 bg-rose-600 hover:bg-rose-500 active:scale-95 text-white rounded-2xl text-xs font-black uppercase tracking-wider shadow-lg shadow-rose-600/30 hover:scale-[1.02] transition-transform duration-150 ease-out disabled:opacity-50 cursor-pointer"
+                                >
+                                    Confirmar
+                                </button>
+                            </div>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
 
             <TwoFactorModal
                 isOpen={is2FAModalOpen}
@@ -392,6 +503,12 @@ export const Dashboard: React.FC = () => {
                 userId={userId || ''}
                 actionTitle={I18N_TEXTS.DELETE_MODAL.TITLE}
                 actionDescription={I18N_TEXTS.DELETE_MODAL.DESCRIPTION}
+            />
+
+            {/* Acciones Rápidas (Floating Quick Actions) */}
+            <QuickActions 
+                canCreateGroup={canCreateGroup}
+                activeGroups={allActiveGroups}
             />
         </div>
     );

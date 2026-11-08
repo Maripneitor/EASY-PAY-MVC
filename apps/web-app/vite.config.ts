@@ -24,31 +24,32 @@ export default defineConfig({
     },
     proxy: {
       '/api/auth': {
-        target: isDocker ? 'http://user-service:8000' : 'http://localhost:8001',
+        target: isDocker ? 'http://user-service:8000' : 'http://127.0.0.1:8001',
         changeOrigin: true,
       },
       '/api/admin': {
-        target: isDocker ? 'http://user-service:8000' : 'http://localhost:8001',
+        target: isDocker ? 'http://user-service:8000' : 'http://127.0.0.1:8001',
         changeOrigin: true,
       },
       '/api/groups': {
-        target: isDocker ? 'http://group-service:8000' : 'http://localhost:8002',
+        target: isDocker ? 'http://group-service:8000' : 'http://127.0.0.1:8002',
         changeOrigin: true,
+        ws: true,
       },
       '/api/stats': {
-        target: isDocker ? 'http://stats-service:8000' : 'http://localhost:8003',
+        target: isDocker ? 'http://stats-service:8000' : 'http://127.0.0.1:8003',
         changeOrigin: true,
       },
       '/api/ocr': {
-        target: isDocker ? 'http://ocr-service:8000' : 'http://localhost:8004',
+        target: isDocker ? 'http://ocr-service:8000' : 'http://127.0.0.1:8004',
         changeOrigin: true,
       },
       '/api/notifications': {
-        target: isDocker ? 'http://notification-service:8000' : 'http://localhost:8005',
+        target: isDocker ? 'http://notification-service:8000' : 'http://127.0.0.1:8005',
         changeOrigin: true,
       },
       '/api/wallet': {
-        target: isDocker ? 'http://wallet-service:8000' : 'http://localhost:8006',
+        target: isDocker ? 'http://wallet-service:8000' : 'http://127.0.0.1:8006',
         changeOrigin: true,
       }
     }

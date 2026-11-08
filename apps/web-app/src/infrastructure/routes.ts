@@ -9,6 +9,8 @@ export const ROUTES = {
     RECOVER_PASSWORD: '/recuperar-password',
     RESET_PASSWORD: '/restablecer-password',
     QR_SCANNER: '/escaner-qr',
+    JOIN: '/join',
+    UNIRSE: '/unirse',
     TWO_FACTOR_SETUP: '/configurar-2fa',
     TWO_FACTOR_VERIFY: '/verificar-2fa',
 

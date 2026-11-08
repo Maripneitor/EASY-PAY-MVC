@@ -128,7 +128,7 @@ export const useGroups = () => {
         try {
             await groupRepository.joinGroup(code, user as any);
             await refreshGroups();
-            toast.success("Te has unido al grupo");
+            toast.success("Te has unido al grupo exitosamente");
         } catch (error: any) {
             toast.error(error.message || "Código inválido o ya estás en el grupo");
             throw error;

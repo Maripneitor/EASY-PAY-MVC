@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigate, useOutletContext } from 'react-router-dom';
 import {
     Edit2,
@@ -16,7 +16,12 @@ import {
     ArrowUpRight,
     AlertCircle,
     ShoppingBag,
-    PieChart
+    PieChart,
+    Laptop,
+    Globe,
+    Shield,
+    Trash2,
+    Clock
 } from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext';
 import { PageHeader } from '@ui/components/PageHeader';
@@ -28,6 +33,8 @@ import { generateFinancialReport } from '../../../infrastructure/services/PdfSer
 import { toast } from 'sonner';
 import { Download } from 'lucide-react';
 import { PieChart as RePieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts';
+import { TwoFactorModal } from '@ui/components/Security/TwoFactorModal';
+import { userRepository } from '../../../infrastructure/api/repositories';
 
 const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#06b6d4', '#f97316'];
 
@@ -55,6 +62,83 @@ export const ProfilePage = () => {
     }, 0) || 0;
     const activeDebtGroupsCount = allActiveGroups?.filter(g => g.mi_balance !== 0).length || 0; // Logical reference
 
+    const [is2FAModalOpen, setIs2FAModalOpen] = useState(false);
+    const [activeSessions, setActiveSessions] = useState<any[]>([]);
+    const [loadingSessions, setLoadingSessions] = useState(false);
+
+    // Cargar sesiones reales desde MongoDB
+    const loadSessions = React.useCallback(async () => {
+        if (!user?.id) return;
+        setLoadingSessions(true);
+        try {
+            const data = await userRepository.getActiveSessions();
+            setActiveSessions(data);
+        } catch (error) {
+            console.error("Error al cargar sesiones:", error);
+        } finally {
+            setLoadingSessions(false);
+        }
+    }, [user?.id]);
+
+    React.useEffect(() => {
+        loadSessions();
+    }, [loadSessions]);
+
+    const handleRevokeSession = async (sessionId: string) => {
+        try {
+            await userRepository.revokeSession(sessionId);
+            setActiveSessions(prev => prev.filter(s => s.id !== sessionId));
+            toast.success('Sesión remota revocada correctamente', {
+                description: 'El token ha sido invalidado en la base de datos.'
+            });
+        } catch (error: any) {
+            toast.error(error.message || 'Error al revocar la sesión');
+        }
+    };
+
+    const handleRevokeAllOtherSessions = async () => {
+        try {
+            await userRepository.revokeAllOtherSessions();
+            setActiveSessions(prev => prev.filter(s => s.isCurrent));
+            toast.success('Todas las sesiones remotas han sido revocadas', {
+                description: 'Solo tu dispositivo actual mantiene el acceso activo.'
+            });
+        } catch (error: any) {
+            toast.error(error.message || 'Error al revocar sesiones remotas');
+        }
+    };
+
+    const handleOpen2FAFlow = async () => {
+        if (is2FAActive) {
+            toast.info('Doble Factor (2FA) ya se encuentra activo', {
+                description: 'Tu cuenta cuenta con protección adicional mediante códigos.'
+            });
+            return;
+        }
+
+        if (!user?.id) {
+            navigate(ROUTES.TWO_FACTOR_SETUP);
+            return;
+        }
+
+        const toastId = toast.loading('Preparando configuración de 2FA...');
+        try {
+            await userRepository.setupTwoFactor(user.id);
+            toast.success('Código de seguridad enviado a tu correo', { id: toastId });
+            setIs2FAModalOpen(true);
+        } catch (error: any) {
+            toast.error(error.message || 'Error al iniciar configuración 2FA', { id: toastId });
+            navigate(ROUTES.TWO_FACTOR_SETUP);
+        }
+    };
+
+    const handleVerify2FASuccess = () => {
+        setIs2FAModalOpen(false);
+        toast.success('¡Doble Factor de Autenticación (2FA) activado con éxito!', {
+            description: 'A partir de ahora tus operaciones críticas estarán protegidas.'
+        });
+    };
+
     const { colorTheme, isDark, setTheme, toggleTheme, fontSize, setFontSize } = useTheme();
 
     // --- LÓGICA DE DATOS REALES ---
@@ -62,18 +146,26 @@ export const ProfilePage = () => {
     const userEmail = user?.email || "usuario@easypay.com";
 
     // CORRECCIÓN: Validamos si el 2FA está activo realmente en la sesión
-    const is2FAActive = user?.['2fa_enabled'] || user?.two_factor?.enabled || user?.is_verified;
+    const is2FAActive = Boolean(user?.['2fa_enabled'] || user?.two_factor?.enabled || user?.is_verified);
 
     const avatarUrl = user?.avatarUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(userName)}&background=3b82f6&color=fff&bold=true`;
 
     const handleThemeChange = (value: string) => {
-        if (value === 'light') { // Logical reference
+        if (value === 'light') {
             if (isDark) toggleTheme();
-            setTheme('default'); // Logical reference
+            setTheme('default');
+            toast.success('Tema cambiado a Claro');
         } else {
             if (!isDark) toggleTheme();
             setTheme(value as any);
+            toast.success(`Tema actualizado: ${value}`);
         }
+    };
+
+    const handleFontSizeChange = (size: 'small' | 'medium' | 'large') => {
+        setFontSize(size);
+        const labels = { small: 'Chico', medium: 'Normal', large: 'Grande' };
+        toast.success(`Tamaño de texto ajustado a ${labels[size]}`);
     };
 
     return (
@@ -290,12 +382,13 @@ export const ProfilePage = () => {
                                         <span className="text-sm font-medium text-[var(--text-primary)]">Tamaño de Texto</span>
                                     </div>
                                     <div className="flex p-1 bg-[var(--bg-body)] rounded-xl border border-[var(--border-color)]">
-                                        {['small', 'medium', 'large'].map((size) => ( // Logical reference
+                                        {(['small', 'medium', 'large'] as const).map((size) => (
                                             <button
-                                                key={size} // Logical reference
-                                                onClick={() => setFontSize(size as any)} // Logical reference
-                                                className={`flex-1 py-1 rounded-lg text-[10px] font-bold uppercase transition-all ${fontSize === size ? 'bg-[var(--primary)] text-white' : 'text-slate-500' // Logical reference
-                                                    }`}
+                                                key={size}
+                                                onClick={() => handleFontSizeChange(size)}
+                                                className={`flex-1 py-1 rounded-lg text-[10px] font-bold uppercase transition-all ${
+                                                    fontSize === size ? 'bg-[var(--primary)] text-white shadow-sm' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'
+                                                }`}
                                             >
                                                 {size === 'small' ? 'Chico' : size === 'medium' ? 'Normal' : 'Grande'}
                                             </button>
@@ -342,17 +435,25 @@ export const ProfilePage = () => {
                                     <ChevronRight className="text-slate-400" size={18} />
                                 </button>
 
-                                {/* CORRECCIÓN: Seguridad 2FA Dinámica */}
-                                <button onClick={() => navigate(ROUTES.TWO_FACTOR_SETUP)} className="w-full p-4 flex items-center justify-between hover:bg-[var(--hover-bg)] transition-colors group">
+                                {/* Seguridad 2FA Dinámica */}
+                                <button 
+                                    onClick={handleOpen2FAFlow} 
+                                    className="w-full p-4 flex items-center justify-between hover:bg-[var(--hover-bg)] transition-colors group"
+                                    title={is2FAActive ? "2FA Habilitado" : "Configurar verificación en dos pasos"}
+                                >
                                     <div className="flex items-center gap-3">
-                                        <Smartphone className="text-[var(--text-secondary)]" size={20} />
-                                        <span className="text-sm font-medium text-[var(--text-secondary)]">Seguridad 2FA</span>
+                                        <Smartphone className="text-[var(--text-secondary)] group-hover:text-[var(--primary)] transition-colors" size={20} />
+                                        <div className="text-left">
+                                            <span className="text-sm font-medium text-[var(--text-primary)] block">Seguridad 2FA</span>
+                                            <span className="text-[10px] text-[var(--text-secondary)]">Doble factor de autenticación</span>
+                                        </div>
                                     </div>
-                                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded border transition-colors ${is2FAActive
-                                            ? "text-green-500 bg-green-500/10 border-green-500/20"
-                                            : "text-amber-500 bg-amber-500/10 border-amber-500/20"
-                                        }`}>
-                                        {is2FAActive ? "ACTIVO" : "CONFIGURAR"}
+                                    <span className={`text-[10px] font-black uppercase tracking-wider px-2.5 py-1 rounded-full border transition-all ${
+                                        is2FAActive
+                                            ? "text-emerald-500 bg-emerald-500/10 border-emerald-500/20 shadow-sm"
+                                            : "text-amber-500 bg-amber-500/10 border-amber-500/20 hover:scale-105"
+                                    }`}>
+                                        {is2FAActive ? "ACTIVADO" : "CONFIGURAR"}
                                     </span>
                                 </button>
 
@@ -368,7 +469,93 @@ export const ProfilePage = () => {
                             <p className="text-center text-slate-400 dark:text-slate-600 text-[10px] mt-6 font-mono uppercase tracking-widest">Easy-Pay v2.4.0 (Build 942)</p>
                         </section>
                     </div>
+
+                    {/* SECCIÓN 2: Historial de Sesiones Activas (Seguridad de Cuenta) */}
+                    <section className="w-full mt-10">
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
+                            <div>
+                                <h3 className="text-sm font-black text-[var(--text-primary)] uppercase tracking-wider flex items-center gap-2">
+                                    <Shield className="text-[var(--primary)]" size={18} />
+                                    Sesiones Activas
+                                </h3>
+                                <p className="text-xs text-[var(--text-secondary)] mt-0.5">
+                                    Dispositivos y navegadores con acceso autorizado a tu cuenta.
+                                </p>
+                            </div>
+                            {activeSessions.length > 1 && (
+                                <button
+                                    onClick={handleRevokeAllOtherSessions}
+                                    className="text-[11px] font-black uppercase tracking-wider text-rose-500 hover:text-rose-600 dark:hover:text-rose-400 transition-colors flex items-center gap-1.5 self-start sm:self-auto"
+                                >
+                                    <LogOut size={14} />
+                                    Cerrar todas las demás sesiones
+                                </button>
+                            )}
+                        </div>
+
+                        <div className="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl overflow-hidden divide-y divide-[var(--border-color)] shadow-sm">
+                            {activeSessions.map((session) => (
+                                <div key={session.id} className="p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 transition-colors hover:bg-black/5 dark:hover:bg-white/[0.02]">
+                                    <div className="flex items-start sm:items-center gap-3.5">
+                                        <div className={`p-2.5 rounded-xl shrink-0 ${
+                                            session.isCurrent 
+                                                ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20' 
+                                                : 'bg-slate-100 dark:bg-slate-800 text-slate-400 border border-slate-200 dark:border-slate-700'
+                                        }`}>
+                                            {session.type === 'desktop' ? <Laptop size={20} /> : <Smartphone size={20} />}
+                                        </div>
+                                        <div>
+                                            <div className="flex items-center gap-2 flex-wrap">
+                                                <span className="font-bold text-sm text-[var(--text-primary)]">{session.device}</span>
+                                                {session.isCurrent ? (
+                                                    <span className="text-[9px] font-black uppercase tracking-wider bg-emerald-500/15 text-emerald-500 border border-emerald-500/30 px-2 py-0.5 rounded-full">
+                                                        Sesión Actual
+                                                    </span>
+                                                ) : (
+                                                    <span className="text-[9px] font-bold text-slate-400 flex items-center gap-1">
+                                                        <Clock size={10} /> {session.lastActive}
+                                                    </span>
+                                                )}
+                                            </div>
+                                            <div className="flex items-center gap-2 text-xs text-[var(--text-secondary)] mt-1 flex-wrap">
+                                                <span className="flex items-center gap-1"><Globe size={12} /> {session.location}</span>
+                                                <span>•</span>
+                                                <span className="font-mono text-[11px] opacity-75">IP: {session.ip}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        {session.isCurrent ? (
+                                            <span className="text-[11px] font-bold text-emerald-500 flex items-center gap-1 px-3 py-1.5 rounded-lg bg-emerald-500/5">
+                                                <CheckCircle size={14} /> Conectado
+                                            </span>
+                                        ) : (
+                                            <button
+                                                onClick={() => handleRevokeSession(session.id)}
+                                                className="px-3.5 py-1.5 rounded-xl border border-rose-500/30 text-rose-500 hover:bg-rose-500/10 active:scale-95 text-xs font-bold transition-all flex items-center gap-1.5 w-full sm:w-auto justify-center"
+                                                title="Revocar acceso"
+                                            >
+                                                <LogOut size={13} />
+                                                Cerrar sesión
+                                            </button>
+                                        )}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </section>
                 </main>
+
+                {/* Modal interactivo de configuración 2FA */}
+                <TwoFactorModal
+                    isOpen={is2FAModalOpen}
+                    onClose={() => setIs2FAModalOpen(false)}
+                    onVerified={handleVerify2FASuccess}
+                    userId={user?.id || ''}
+                    actionTitle="Configurar Doble Factor (2FA)"
+                    actionDescription="Ingresa el código numérico de 6 dígitos enviado a tu correo electrónico para habilitar 2FA."
+                />
             </div>
     );
 };

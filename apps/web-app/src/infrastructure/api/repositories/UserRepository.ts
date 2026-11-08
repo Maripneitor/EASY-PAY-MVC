@@ -96,6 +96,21 @@ class UserRepository {
         const response = await httpClient.delete(`/auth/cards/${userId}/${cardId}`);
         return response.data;
     }
+
+    // ── Sesiones Activas en MongoDB ───────────────────────────────────────────
+    async getActiveSessions(): Promise<any[]> {
+        const response = await httpClient.get(`/auth/sessions`);
+        return response.data?.sessions || [];
+    }
+
+    async revokeSession(sessionId: string): Promise<void> {
+        await httpClient.delete(`/auth/sessions/${sessionId}`);
+    }
+
+    async revokeAllOtherSessions(): Promise<any> {
+        const response = await httpClient.delete(`/auth/sessions`);
+        return response.data;
+    }
 }
 
 export const userRepository = new UserRepository();

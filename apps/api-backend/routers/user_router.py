@@ -4,8 +4,9 @@ from pydantic import BaseModel
 
 from controllers.user_controller import UserController
 from schemas.user_schema import UserCreate, UserLogin, UserUpdate, PasswordChange, PasswordResetRequest
-from core.permissions import get_current_user_id
+from core.permissions import get_current_user_id, get_current_user_claims, get_current_user_with_permissions
 from core.rate_limiter import auth_rate_limiter
+from utils.user_agent_parser import extract_client_ip
 
 user_router = APIRouter(prefix="/api/auth", tags=["Auth"])
 controller = UserController()
@@ -14,7 +15,9 @@ class RefreshRequest(BaseModel):
     refresh_token: Optional[str] = None
 
 def get_client_info(request: Request):
-    ip = request.client.host if request.client else "127.0.0.1"
+    client_host = request.client.host if request.client else "127.0.0.1"
+    headers = dict(request.headers)
+    ip = extract_client_ip(headers, client_host)
     ua = request.headers.get("user-agent", "Unknown")
     return ip, ua
 
@@ -107,6 +110,24 @@ async def logout(request: Request, response: Response):
     ip, ua = get_client_info(request)
     response.delete_cookie(key="refresh_token")
     return {"status": "success", "message": "Sesión cerrada correctamente."}
+
+@user_router.get("/me")
+async def get_my_info(current_user: Dict[str, Any] = Depends(get_current_user_with_permissions)):
+    """Retorna los datos del usuario en tiempo real con roles y permisos actualizados desde la base de datos"""
+    return {
+        "id": current_user["id"],
+        "nombre": current_user.get("nombre"),
+        "email": current_user.get("email"),
+        "phone": current_user.get("phone"),
+        "birth_date": current_user.get("birth_date"),
+        "address": current_user.get("address"),
+        "bank_accounts": current_user.get("bank_accounts", []),
+        "roles": current_user.get("roles", ["Usuario Regular"]),
+        "permissions": current_user.get("resolved_permissions", []),
+        "is_verified": current_user.get("is_verified", False),
+        "2fa_enabled": current_user.get("two_factor", {}).get("enabled", False) or current_user.get("is_verified", False),
+        "financial_profile": current_user.get("financial_profile") or {}
+    }
 
 @user_router.get("/profile/{user_id}")
 async def get_user_profile(user_id: str, current_user_id: str = Depends(get_current_user_id)):
@@ -230,3 +251,38 @@ async def set_default_card(user_id: str, card_id: str, current_user_id: str = De
     if success:
         return {"message": "Tarjeta predeterminada actualizada", "status": "success"}
     raise HTTPException(status_code=400, detail="No se pudo actualizar la tarjeta")
+
+# --- Rutas de Gestión de Sesiones Activas en Base de Datos ---
+@user_router.get("/sessions")
+async def get_my_sessions(
+    claims: Dict[str, Any] = Depends(get_current_user_claims)
+):
+    """Retorna las sesiones activas vinculadas a la cuenta en MongoDB"""
+    user_id = claims.get("sub")
+    current_jti = claims.get("jti")
+    sessions = await controller.get_active_sessions(user_id, current_jti=current_jti)
+    return {"status": "success", "sessions": sessions}
+
+@user_router.delete("/sessions/{session_id}")
+async def revoke_session(
+    session_id: str,
+    user_id: str = Depends(get_current_user_id)
+):
+    """Invalida la sesión especificada en la base de datos"""
+    success = await controller.revoke_session(user_id, session_id)
+    if success:
+        return {"status": "success", "message": "Sesión revocada correctamente"}
+    raise HTTPException(status_code=404, detail="Sesión no encontrada o ya revocada")
+
+@user_router.delete("/sessions")
+async def revoke_all_other_sessions(
+    claims: Dict[str, Any] = Depends(get_current_user_claims)
+):
+    """Invalida todas las demás sesiones remotas excepto la actual"""
+    user_id = claims.get("sub")
+    current_jti = claims.get("jti")
+    revoked_count = await controller.revoke_all_sessions(user_id, current_jti=current_jti)
+    return {
+        "status": "success",
+        "message": f"{revoked_count} sesiones remotas revocadas correctamente"
+    }

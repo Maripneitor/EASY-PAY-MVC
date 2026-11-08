@@ -48,7 +48,9 @@ async def assign_user_roles(
         ip_address=ip
     )
     if controller.is_error(result):
-        raise HTTPException(status_code=400, detail=result.get("message"))
+        code = result.get("error_code")
+        status_code = 403 if code in ["SUPERADMIN_PROTECTED", "SELF_DEMOTION_BLOCKED", "FORBIDDEN"] else 400
+        raise HTTPException(status_code=status_code, detail=result.get("message"))
     return result
 
 # ── 2. GESTIÓN DE ROLES Y PERMISOS DINÁMICOS ─────────────────────────────────
@@ -72,7 +74,9 @@ async def create_role(
         ip_address=ip
     )
     if controller.is_error(result):
-        raise HTTPException(status_code=400, detail=result.get("message"))
+        code = result.get("error_code")
+        status_code = 403 if code in ["SUPERADMIN_PROTECTED", "SELF_DEMOTION_BLOCKED", "FORBIDDEN"] else 400
+        raise HTTPException(status_code=status_code, detail=result.get("message"))
     return result
 
 @admin_router.put("/roles/{role_id}")
@@ -92,7 +96,9 @@ async def update_role(
         ip_address=ip
     )
     if controller.is_error(result):
-        raise HTTPException(status_code=400, detail=result.get("message"))
+        code = result.get("error_code")
+        status_code = 403 if code in ["SUPERADMIN_PROTECTED", "SELF_DEMOTION_BLOCKED", "FORBIDDEN"] else 400
+        raise HTTPException(status_code=status_code, detail=result.get("message"))
     return result
 
 # ── 3. REGISTRO DE AUDITORÍA Y ACCESOS ───────────────────────────────────────

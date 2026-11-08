@@ -3,6 +3,7 @@ from services.auth_service import AuthService
 from models.user_model import UserModel
 from models.role_model import RoleModel
 from typing import List, Dict, Any, Optional
+import os
 
 auth_service = AuthService()
 user_model = UserModel()
@@ -41,16 +42,33 @@ async def get_current_user_with_permissions(claims: Dict[str, Any] = Depends(get
     """
     Obtiene la entidad del usuario actualizada desde la base de datos
     junto con sus permisos calculados dinámicamente según sus roles en tiempo real.
+    Garantiza que cualquier cambio de rol o revocación surta efecto de inmediato.
     """
     user_id = claims.get("sub")
     user = await user_model.get_user_by_id(user_id)
     if not user:
         raise HTTPException(status_code=404, detail="Usuario no encontrado en el sistema.")
 
-    user_roles = user.get("roles", ["Usuario Regular"])
+    # 1. Obtener roles actualizados directamente desde la base de datos
+    user_roles = user.get("roles")
+    if not user_roles:
+        user_roles = ["Usuario Regular"]
+
+    # Blindaje inmutable permanente para el superadministrador
+    superadmin_email = (os.getenv("SUPERADMIN_EMAIL") or "mariomoguel05@gmail.com").strip().lower()
+    admin_emails = {superadmin_email} | {
+        e.strip().lower() for e in os.getenv("ADMIN_EMAILS", "").split(",") if e.strip()
+    }
+    user_email = (user.get("email") or "").strip().lower()
+    if (user_email == superadmin_email or user_email in admin_emails) and "Administrador" not in user_roles:
+        user_roles = ["Administrador"] + [r for r in user_roles if r != "Administrador"]
+        user["roles"] = user_roles
+
+    # 2. Consultar en tiempo real los permisos asociados en la colección Roles
     permissions = await role_model.get_permissions_for_roles(user_roles)
 
     user["id"] = str(user["_id"])
+    user["roles"] = user_roles
     user["resolved_permissions"] = list(permissions)
     return user
 

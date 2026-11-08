@@ -8,7 +8,18 @@ import {
     ArrowLeft,
     Receipt,
     Pencil,
-    PieChart
+    PieChart,
+    Utensils,
+    Car,
+    Gamepad2,
+    ShoppingCart,
+    Home,
+    Activity,
+    Plane,
+    Tag,
+    Loader2,
+    Sparkles,
+    CheckCircle2
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@infrastructure/utils';
@@ -17,8 +28,24 @@ import { useRegisterExpense } from './useRegisterExpense';
 import { toast } from 'sonner';
 import OcrService from '../../../infrastructure/services/OcrService';
 
+interface CategoryOption {
+    label: string;
+    icon: React.ElementType;
+}
+
+const CATEGORIES: CategoryOption[] = [
+    { label: 'Comida', icon: Utensils },
+    { label: 'Transporte', icon: Car },
+    { label: 'Entretenimiento', icon: Gamepad2 },
+    { label: 'Súper', icon: ShoppingCart },
+    { label: 'Hogar', icon: Home },
+    { label: 'Salud', icon: Activity },
+    { label: 'Viajes', icon: Plane },
+    { label: 'Otros', icon: Tag },
+];
+
 export const RegisterExpense = () => {
-    const { itemId, groupId } = useParams();
+    const { itemId } = useParams();
     const isEditing = Boolean(itemId);
     const { toggleSidebar } = useOutletContext<{ toggleSidebar: () => void }>();
     const navigate = useNavigate();
@@ -38,12 +65,12 @@ export const RegisterExpense = () => {
         if (!file) return;
 
         toast.promise(OcrService.extractTicketData(file), {
-            loading: 'Analizando ticket...',
+            loading: 'Analizando ticket con OCR...',
             success: (data: any) => {
                 setFormData(prev => ({
                     ...prev,
                     nombre: data.restaurantName || prev.nombre,
-                    precio: data.total.toString()
+                    precio: data.total ? data.total.toString() : prev.precio
                 }));
                 return 'Ticket analizado con éxito';
             },
@@ -51,12 +78,15 @@ export const RegisterExpense = () => {
         });
     };
 
-    const currentBuyer = members.find(i => i.id === formData.comprador_id);
-
     const parsedPrice = parseFloat(formData.precio);
     const isPriceValid = formData.precio !== '' && !isNaN(parsedPrice) && parsedPrice > 0;
     const isNameValid = formData.nombre.trim() !== '';
-    const isFormValid = !loading && formData.participantes_ids.length > 0 && isPriceValid && isNameValid;
+    const selectedCount = formData.participantes_ids.length;
+    const isFormValid = !loading && selectedCount > 0 && isPriceValid && isNameValid;
+
+    const sharePerPerson = isPriceValid && selectedCount > 0
+        ? (parsedPrice / selectedCount).toFixed(2)
+        : '0.00';
 
     return (
         <div className="min-h-screen flex flex-col bg-[var(--bg-body)] font-display text-[var(--text-primary)] antialiased overflow-x-hidden">
@@ -68,333 +98,432 @@ export const RegisterExpense = () => {
                 onChange={handleOcr} 
             />
             
+            {/* Luces difusas de fondo */}
             <div className="fixed inset-0 pointer-events-none">
-                <div className="absolute top-[-10%] right-[-10%] w-[400px] h-[400px] bg-[var(--primary)] opacity-[0.03] blur-[120px] rounded-full" />
-                <div className="absolute bottom-[-5%] left-[-5%] w-[300px] h-[300px] bg-blue-500 opacity-[0.03] blur-[100px] rounded-full" />
+                <div className="absolute top-[-5%] right-[-5%] w-[450px] h-[450px] bg-cyan-500/5 blur-[120px] rounded-full" />
+                <div className="absolute bottom-[-5%] left-[-5%] w-[350px] h-[350px] bg-blue-600/5 blur-[100px] rounded-full" />
             </div>
 
-            <div className="flex-1 flex flex-col min-w-0 relative pb-20 md:pb-0 z-10">
+            <div className="flex-1 flex flex-col min-w-0 relative pb-28 lg:pb-12 z-10">
                 <PageHeader
                     onMenuClick={toggleSidebar}
                     title={isEditing ? "Editar Gasto" : "Nuevo Gasto"}
                     onBack={() => navigate(-1)}
                     rightSlot={
                         <button
-                            className="p-2.5 bg-[var(--primary)]/10 text-[var(--primary)] rounded-xl hover:bg-[var(--primary)] transition-all hover:text-white"
+                            type="button"
+                            className="inline-flex items-center gap-2 px-3 py-2 bg-cyan-500/10 text-cyan-400 hover:text-white hover:bg-cyan-600 rounded-xl border border-cyan-500/20 text-xs font-black uppercase tracking-wider active:scale-95 transition-transform duration-150 ease-out shadow-sm"
                             onClick={() => fileInputRef.current?.click()}
-                            title="Escanear Ticket"
+                            title="Escanear Ticket OCR"
                         >
-                            <Receipt size={22} />
+                            <Receipt size={16} />
+                            <span className="hidden sm:inline">Escanear Ticket</span>
                         </button>
                     }
                 />
 
-                <main className="flex-1 w-full max-w-6xl mx-auto px-6 py-12">
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-start">
-                        {/* Columna Izquierda: Datos del Gasto */}
-                        <div className="space-y-10">
+                <main className="flex-1 w-full max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
+                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+                        
+                        {/* ── Columna Izquierda: Monto + Concepto + Categoría + Pagador ── */}
+                        <div className="lg:col-span-7 space-y-6">
 
+                            {/* 1. SECCIÓN DE MONTO DESTACADO */}
                             <motion.div
-                                initial={{ opacity: 0, y: 20 }}
+                                initial={{ opacity: 0, y: 12 }}
                                 animate={{ opacity: 1, y: 0 }}
-                                className="flex flex-col items-start space-y-3 px-4"
+                                transition={{ duration: 0.2, ease: "easeOut" }}
+                                className="bg-[#0f172a] border border-slate-800/80 rounded-3xl p-6 sm:p-8 shadow-xl shadow-black/20 relative overflow-hidden group focus-within:border-cyan-500/50 focus-within:shadow-cyan-500/10 transition-[border-color,box-shadow] duration-200"
                             >
-                                <p className="text-[10px] font-black text-[var(--text-secondary)] uppercase tracking-[0.3em] opacity-60">Monto del Gasto</p>
-                                <div className="relative flex items-center group w-full">
-                                    <div className="absolute left-0 text-5xl font-black text-[var(--primary)] opacity-40 group-focus-within:opacity-100 transition-opacity duration-500">
+                                <div className="absolute top-0 right-0 w-44 h-44 bg-cyan-500/5 blur-3xl pointer-events-none rounded-full" />
+                                
+                                <span className="text-[10px] font-black uppercase tracking-[0.25em] text-slate-400 block mb-2">
+                                    Monto del Gasto
+                                </span>
+                                
+                                <div className="relative flex items-baseline">
+                                    <span className="text-4xl sm:text-6xl font-black text-cyan-400 mr-2 select-none">
                                         $
-                                    </div>
+                                    </span>
                                     <input
                                         type="text"
                                         inputMode="decimal"
                                         value={formData.precio}
                                         onChange={(e) => {
                                             const val = e.target.value.replace(/,/g, '.');
-                                            setFormData({ ...formData, precio: val });
+                                            if (/^\d*\.?\d*$/.test(val)) {
+                                                setFormData({ ...formData, precio: val });
+                                            }
                                         }}
                                         placeholder="0.00"
-                                        className="bg-transparent text-7xl md:text-8xl font-black text-slate-800 dark:text-white text-left w-full focus:outline-none placeholder:opacity-10 tracking-tighter pl-12"
+                                        className="w-full bg-transparent text-5xl sm:text-7xl font-black font-mono tracking-tight text-white focus:outline-none placeholder:text-slate-700"
                                         autoFocus={!isEditing}
                                     />
                                 </div>
-                                {formData.precio !== '' && (!isPriceValid) && (
+
+                                {formData.precio !== '' && !isPriceValid && (
                                     <motion.p 
                                         initial={{ opacity: 0, height: 0 }} 
                                         animate={{ opacity: 1, height: 'auto' }}
-                                        className="text-red-500 text-[11px] font-black mt-2 uppercase tracking-widest px-4"
+                                        className="text-rose-400 text-xs font-bold mt-2.5"
                                     >
-                                        Monto inválido (debe ser mayor a 0)
+                                        Ingresa un monto válido mayor a $0.00
                                     </motion.p>
                                 )}
                             </motion.div>
 
-                    <motion.div
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 0.1 }}
-                        className="space-y-4"
-                    >
-                        <div className="bg-[var(--bg-card)]/60 backdrop-blur-xl border border-[var(--border-color)] rounded-[2.5rem] p-6 shadow-2xl shadow-black/5 space-y-6 relative overflow-hidden group">
-                            <div className="absolute top-0 right-0 w-32 h-32 bg-[var(--primary)] opacity-[0.02] blur-3xl rounded-full" />
-
-                            <div className="flex items-center gap-5">
-                                <div className="w-14 h-14 rounded-2xl bg-[var(--primary)]/5 flex items-center justify-center text-[var(--primary)] border border-[var(--primary)]/10 shadow-inner group-focus-within:bg-[var(--primary)]/10 transition-all">
-                                    <Receipt size={24} />
-                                </div>
-                                <div className="flex-1">
-                                    <p className="text-[9px] font-black text-[var(--text-secondary)] uppercase tracking-widest mb-1 opacity-50">Concepto</p>
-                                    <input
-                                        type="text"
-                                        value={formData.nombre}
-                                        onChange={(e) => setFormData({ ...formData, nombre: e.target.value })}
-                                        placeholder="Ej. Cena en el centro"
-                                        className="w-full bg-transparent text-xl font-bold placeholder:text-slate-400 focus:outline-none"
-                                    />
-                                </div>
-                            </div>
-
-                            <div className="h-px bg-gradient-to-r from-transparent via-[var(--border-color)] to-transparent" />
-
-                            <div className="flex items-center gap-5">
-                                <div className="w-14 h-14 rounded-2xl bg-indigo-500/5 flex items-center justify-center text-indigo-500 border border-indigo-500/10">
-                                    <PieChart size={24} />
-                                </div>
-                                <div className="flex-1">
-                                    <p className="text-[9px] font-black text-[var(--text-secondary)] uppercase tracking-widest mb-2 opacity-50">Categoría</p>
-                                    <div className="flex flex-wrap gap-2">
-                                        {['Comida', 'Transporte', 'Entretenimiento', 'Súper', 'Hogar', 'Salud', 'Viajes', 'Otros'].map(cat => (
-                                            <button
-                                                key={cat} // Logical reference
-                                                onClick={() => setFormData({...formData, categoria: cat})} // Logical reference
-                                                className={cn(
-                                                    "px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest border transition-all",
-                                                    formData.categoria === cat // Logical reference
-                                                        ? "bg-indigo-500 text-white border-indigo-500 shadow-lg shadow-indigo-500/20"
-                                                        : "bg-black/5 text-slate-400 border-transparent hover:border-slate-300"
-                                                )}
-                                            >
-                                                {cat}
-                                            </button>
-                                        ))}
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div className="h-px bg-gradient-to-r from-transparent via-[var(--border-color)] to-transparent" />
-
-                            <div className="flex flex-col gap-3">
-                                <div className="flex items-center gap-5">
-                                    <div className="w-14 h-14 rounded-2xl bg-emerald-500/5 flex items-center justify-center text-emerald-500 border border-emerald-500/10">
-                                        <User size={24} />
-                                    </div>
-                                    <div className="flex-1">
-                                        <p className="text-[10px] font-black text-[var(--text-secondary)] uppercase tracking-[0.3em] mb-4 opacity-50">Pagado por</p>
-                                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                                            {members.map(user => {
-                                                const isSelected = formData.comprador_id === user.id; // Logical reference
-                                                return (
-                                                    <button
-                                                        key={user.id} // Logical reference
-                                                        onClick={() => setFormData({...formData, comprador_id: user.id})} // Logical reference
-                                                        className={cn(
-                                                            "p-4 rounded-2xl border transition-all flex flex-col items-center gap-3 relative overflow-hidden group/payer",
-                                                            isSelected 
-                                                                ? "bg-emerald-500 border-emerald-500 shadow-xl shadow-emerald-500/20"
-                                                                : "bg-black/5 border-transparent hover:bg-white hover:border-emerald-500/30 dark:hover:bg-slate-800"
-                                                        )}
-                                                    >
-                                                        {isSelected && (
-                                                            <div className="absolute top-1.5 right-1.5 text-white/80">
-                                                                <Check size={12} strokeWidth={4} />
-                                                            </div>
-                                                        )}
-                                                        <div className={cn(
-                                                            "w-10 h-10 rounded-full flex items-center justify-center text-xs font-black shadow-inner transition-transform group-hover/payer:scale-110",
-                                                            isSelected ? "bg-white/20 text-white" : "bg-slate-200 text-slate-500"
-                                                        )}>
-                                                            {user.nombre.charAt(0)}
-                                                        </div>
-                                                        <span className={cn(
-                                                            "text-[10px] font-black uppercase tracking-widest truncate w-full text-center px-1",
-                                                            isSelected ? "text-white" : "text-slate-500"
-                                                        )}>
-                                                            {user.nombre.split(' ')[0]}
-                                                        </span>
-                                                    </button>
-                                                );
-                                            })}
+                            {/* 2. CONCEPTO Y CATEGORÍA */}
+                            <motion.div
+                                initial={{ opacity: 0, y: 12 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ duration: 0.2, delay: 0.05, ease: "easeOut" }}
+                                className="bg-[#0f172a] border border-slate-800/80 rounded-3xl p-6 sm:p-7 shadow-xl shadow-black/10 space-y-6"
+                            >
+                                {/* Concepto */}
+                                <div>
+                                    <label className="text-[10px] font-black uppercase tracking-[0.25em] text-slate-400 block mb-2">
+                                        Concepto / Descripción
+                                    </label>
+                                    <div className="flex items-center gap-3 bg-slate-900/80 border border-slate-800 focus-within:border-cyan-500/50 rounded-2xl p-3.5 px-4 transition-colors duration-200">
+                                        <div className="w-9 h-9 rounded-xl bg-cyan-500/10 text-cyan-400 flex items-center justify-center shrink-0">
+                                            <Receipt size={18} />
                                         </div>
+                                        <input
+                                            type="text"
+                                            value={formData.nombre}
+                                            onChange={(e) => setFormData({ ...formData, nombre: e.target.value })}
+                                            placeholder="Ej. Cena en restaurante, Uber al aeropuerto..."
+                                            className="w-full bg-transparent text-base font-bold text-white placeholder:text-slate-500 focus:outline-none"
+                                        />
                                     </div>
                                 </div>
-                            </div>
-                        </div>
+
+                                <div className="h-px bg-slate-800/60" />
+
+                                {/* Categorías con Iconografía Minimalista */}
+                                <div>
+                                    <div className="flex items-center justify-between mb-3">
+                                        <label className="text-[10px] font-black uppercase tracking-[0.25em] text-slate-400 block">
+                                            Categoría
+                                        </label>
+                                        <span className="text-[10px] font-bold text-cyan-400">
+                                            {formData.categoria}
+                                        </span>
+                                    </div>
+
+                                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+                                        {CATEGORIES.map(({ label, icon: Icon }) => {
+                                            const isSelected = formData.categoria === label;
+                                            return (
+                                                <button
+                                                    key={label}
+                                                    type="button"
+                                                    onClick={() => setFormData({ ...formData, categoria: label })}
+                                                    className={cn(
+                                                        "py-2.5 px-3 rounded-xl text-xs font-black uppercase tracking-wider border flex items-center justify-center gap-2",
+                                                        "active:scale-95 transition-transform duration-150 ease-out",
+                                                        isSelected
+                                                            ? "bg-cyan-500/20 text-cyan-300 border-cyan-400/60 shadow-sm shadow-cyan-500/20"
+                                                            : "bg-slate-900/60 text-slate-400 border-slate-800 hover:border-slate-700 hover:text-slate-200"
+                                                    )}
+                                                >
+                                                    <Icon size={14} className={isSelected ? "text-cyan-400" : "text-slate-400"} />
+                                                    <span className="truncate">{label}</span>
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
                             </motion.div>
 
+                            {/* 3. PAGADO POR */}
+                            <motion.div
+                                initial={{ opacity: 0, y: 12 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ duration: 0.2, delay: 0.1, ease: "easeOut" }}
+                                className="bg-[#0f172a] border border-slate-800/80 rounded-3xl p-6 sm:p-7 shadow-xl shadow-black/10"
+                            >
+                                <div className="flex items-center justify-between mb-4">
+                                    <label className="text-[10px] font-black uppercase tracking-[0.25em] text-slate-400 block">
+                                        Pagado por
+                                    </label>
+                                    <span className="text-[10px] font-bold text-emerald-400">
+                                        {members.find(m => m.id === formData.comprador_id)?.nombre || 'Selecciona'}
+                                    </span>
+                                </div>
+
+                                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                                    {members.map(user => {
+                                        const isPayer = formData.comprador_id === user.id;
+                                        return (
+                                            <button
+                                                key={user.id}
+                                                type="button"
+                                                onClick={() => setFormData({ ...formData, comprador_id: user.id })}
+                                                className={cn(
+                                                    "p-3.5 rounded-2xl border flex items-center gap-3 relative overflow-hidden text-left",
+                                                    "active:scale-95 transition-transform duration-150 ease-out",
+                                                    isPayer
+                                                        ? "bg-emerald-500/15 border-emerald-500/50 shadow-sm shadow-emerald-500/20"
+                                                        : "bg-slate-900/60 border-slate-800 hover:border-slate-700 text-slate-400 hover:text-slate-200"
+                                                )}
+                                            >
+                                                <div className={cn(
+                                                    "w-10 h-10 rounded-full flex items-center justify-center text-xs font-black shrink-0",
+                                                    isPayer 
+                                                        ? "bg-emerald-500 text-white shadow-sm" 
+                                                        : "bg-slate-800 text-slate-400"
+                                                )}>
+                                                    {user.nombre?.charAt(0)?.toUpperCase() || '?'}
+                                                </div>
+                                                <div className="min-w-0 flex-1">
+                                                    <p className={cn(
+                                                        "text-xs font-black uppercase tracking-tight truncate",
+                                                        isPayer ? "text-emerald-300" : "text-slate-200"
+                                                    )}>
+                                                        {user.nombre.split(' ')[0]}
+                                                    </p>
+                                                    <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest block">
+                                                        {isPayer ? "Comprador" : "Miembro"}
+                                                    </span>
+                                                </div>
+                                                {isPayer && (
+                                                    <CheckCircle2 size={16} className="text-emerald-400 shrink-0" />
+                                                )}
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+                            </motion.div>
+
+                            {/* Botón de Confirmación para Escritorio */}
                             <motion.div
                                 initial={{ opacity: 0 }}
                                 animate={{ opacity: 1 }}
-                                transition={{ delay: 0.3 }}
-                                className="hidden lg:block pt-6"
+                                transition={{ delay: 0.15 }}
+                                className="hidden lg:block pt-2"
                             >
                                 <button
-                                    className={cn(
-                                        "w-full h-20 text-white rounded-[2rem] shadow-2xl flex items-center justify-center gap-4 active:scale-[0.97] transition-all overflow-hidden relative group",
-                                        (!isFormValid)
-                                            ? "bg-slate-300 dark:bg-slate-800 cursor-not-allowed shadow-none"
-                                            : "bg-[var(--primary)] shadow-[var(--primary)]/30 hover:scale-[1.02]"
-                                    )}
-                                    onClick={handleSubmit}
+                                    type="button"
                                     disabled={!isFormValid}
+                                    onClick={handleSubmit}
+                                    className={cn(
+                                        "w-full h-16 rounded-2xl text-white font-black uppercase tracking-wider text-xs shadow-xl flex items-center justify-center gap-3",
+                                        "active:scale-[0.98] transition-transform duration-150 ease-out",
+                                        !isFormValid
+                                            ? "bg-slate-800 text-slate-500 cursor-not-allowed shadow-none border border-slate-700/50"
+                                            : "bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 shadow-cyan-500/25"
+                                    )}
                                 >
                                     {loading ? (
-                                        <div className="animate-spin rounded-full h-6 w-6 border-2 border-white/30 border-t-white" />
+                                        <>
+                                            <Loader2 size={18} className="animate-spin" />
+                                            <span>Guardando Gasto...</span>
+                                        </>
                                     ) : (
-                                        isEditing ? <Pencil size={24} /> : <Check size={28} className="stroke-[3]" />
+                                        <>
+                                            {isEditing ? <Pencil size={18} /> : <Check size={20} className="stroke-[3]" />}
+                                            <span>{isEditing ? 'Actualizar Gasto' : 'Confirmar Gasto'}</span>
+                                        </>
                                     )}
-                                    <span className="uppercase tracking-[0.2em] font-black text-sm">
-                                        {loading ? 'Guardando...' : (isEditing ? 'Actualizar Gasto' : 'Confirmar Gasto')}
-                                    </span>
                                 </button>
                             </motion.div>
                         </div>
 
-                        {/* Columna Derecha: Participantes */}
-                        <div className="space-y-6">
+                        {/* ── Columna Derecha: División de Gastos ── */}
+                        <div className="lg:col-span-5 space-y-6">
                             <motion.div
-                                initial={{ opacity: 0, x: 20 }}
-                                animate={{ opacity: 1, x: 0 }}
-                                transition={{ delay: 0.2 }}
-                                className="space-y-6"
+                                initial={{ opacity: 0, y: 12 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ duration: 0.2, delay: 0.15, ease: "easeOut" }}
+                                className="bg-[#0f172a] border border-slate-800/80 rounded-3xl p-6 sm:p-7 shadow-xl shadow-black/10 space-y-6"
                             >
-                        <div className="flex items-center justify-between px-2">
-                            <h3 className="text-[10px] font-black text-[var(--text-secondary)] uppercase tracking-[0.25em] flex items-center gap-3">
-                                <div className="w-1.5 h-1.5 rounded-full bg-[var(--primary)]" />
-                                Dividir entre
-                            </h3>
-                                <div className="flex items-center gap-3">
-                                    <button 
-                                        onClick={() => setFormData({...formData, participantes_ids: members.map(m => m.id)})}
-                                        className="text-[9px] font-black uppercase tracking-widest text-[var(--text-secondary)] hover:text-[var(--primary)] transition-colors px-3 py-1 bg-black/5 rounded-lg border border-transparent hover:border-[var(--primary)]/20"
-                                    >
-                                        Todos
-                                    </button>
-                                    <button 
-                                        onClick={() => setFormData({...formData, participantes_ids: [formData.comprador_id]})}
-                                        className="text-[9px] font-black uppercase tracking-widest text-[var(--text-secondary)] hover:text-[var(--primary)] transition-colors px-3 py-1 bg-black/5 rounded-lg border border-transparent hover:border-[var(--primary)]/20"
-                                    >
-                                        Solo Yo
-                                    </button>
-                                    <div className="w-px h-4 bg-slate-200 mx-1" />
-                                    <div className="flex items-center gap-2 text-[var(--primary)] bg-[var(--primary)]/10 px-4 py-1.5 rounded-full border border-[var(--primary)]/20 shadow-sm">
-                                        <Users size={14} />
-                                        <span className="text-[10px] font-black uppercase tracking-tighter">
-                                            {formData.participantes_ids.length} Seleccionados
-                                        </span>
+                                <div className="flex items-center justify-between pb-4 border-b border-slate-800">
+                                    <div>
+                                        <h3 className="text-sm font-black uppercase tracking-wider text-white">
+                                            Dividir Entre
+                                        </h3>
+                                        <p className="text-[10px] font-bold text-slate-400 mt-0.5">
+                                            {selectedCount} de {members.length} personas
+                                        </p>
+                                    </div>
+
+                                    {/* Selectores Rápidos en Pastilla */}
+                                    <div className="flex items-center gap-1.5 bg-slate-900/90 p-1 rounded-xl border border-slate-800">
+                                        <button
+                                            type="button"
+                                            onClick={() => setFormData({ ...formData, participantes_ids: members.map(m => m.id) })}
+                                            className="px-2.5 py-1 text-[10px] font-black uppercase tracking-wider text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 active:scale-95 transition-transform duration-150 ease-out"
+                                        >
+                                            Todos
+                                        </button>
+                                        <div className="w-px h-3 bg-slate-800" />
+                                        <button
+                                            type="button"
+                                            onClick={() => setFormData({ ...formData, participantes_ids: [formData.comprador_id] })}
+                                            className="px-2.5 py-1 text-[10px] font-black uppercase tracking-wider text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 active:scale-95 transition-transform duration-150 ease-out"
+                                        >
+                                            Solo Yo
+                                        </button>
                                     </div>
                                 </div>
-                            </div>
 
-                            <div className="grid gap-3 max-h-[60vh] overflow-y-auto pr-2 overflow-x-hidden no-scrollbar">
-                            <AnimatePresence mode="popLayout">
-                                {members.map((user, index) => {
-                                    const isSelected = formData.participantes_ids.includes(user.id); // Logical reference
-                                    const initial = user.nombre?.charAt(0).toUpperCase() || '?';
-
-                                    return (
-                                        <motion.div
-                                            key={user.id}
-                                            initial={{ opacity: 0, x: -10 }}
-                                            animate={{ opacity: 1, x: 0 }}
-                                            transition={{ delay: index * 0.05 }}
-                                            onClick={() => toggleParticipant(user.id)}
-                                            className={cn(
-                                                "group flex items-center justify-between p-6 rounded-[2.5rem] border transition-all cursor-pointer active:scale-[0.98] relative overflow-hidden",
-                                                isSelected
-                                                    ? "bg-[var(--bg-card)] border-[var(--primary)] shadow-2xl shadow-[var(--primary)]/5"
-                                                    : "bg-transparent border-[var(--border-color)] opacity-40 grayscale hover:opacity-100 hover:grayscale-0"
-                                            )}
-                                        >
-                                            {isSelected && (
-                                                <div className="absolute left-0 top-0 bottom-0 w-1 bg-[var(--primary)] shadow-[0_0_15px_var(--primary)]" />
-                                            )}
-                                                <div className="flex items-center gap-5">
-                                                    <div className={cn(
-                                                        "w-12 h-12 rounded-2xl flex items-center justify-center font-black text-sm transition-all duration-500",
-                                                        isSelected ? "bg-[var(--primary)] text-white" : "bg-slate-100 dark:bg-slate-800 text-slate-400"
-                                                    )}>
-                                                        {initial}
-                                                    </div>
-                                                    <div className="flex flex-col">
-                                                        <span className={cn("font-bold text-base", isSelected ? "text-[var(--text-primary)]" : "text-[var(--text-secondary)]")}>
-                                                            {user.nombre || 'Usuario'}
-                                                        </span>
-                                                        <span className="text-[9px] font-black uppercase tracking-widest opacity-40">Participante</span>
-                                                    </div>
-                                                </div>
-                                                
-                                                <div className="flex items-center gap-4">
-                                                    {isSelected && formData.precio && parseFloat(formData.precio) > 0 && ( // Logical reference
-                                                        <motion.div 
-                                                            initial={{ opacity: 0, scale: 0.8 }}
-                                                            animate={{ opacity: 1, scale: 1 }}
-                                                            className="text-right"
-                                                        >
-                                                            <div className="flex items-center gap-2 justify-end mb-1">
-                                                                <span className="text-[10px] font-black text-emerald-500 bg-emerald-500/10 px-2 py-0.5 rounded-md">
-                                                                    {Math.round(100 / formData.participantes_ids.length)}%
-                                                                </span>
-                                                                <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Le toca</p>
-                                                            </div>
-                                                            <p className="text-lg font-black text-[var(--primary)] font-mono leading-none">
-                                                                ${(parseFloat(formData.precio) / formData.participantes_ids.length).toFixed(2)}
-                                                            </p>
-                                                        </motion.div>
+                                {/* Mini-Avatares Interactivos (Acceso de un toque) */}
+                                <div>
+                                    <span className="text-[10px] font-black uppercase tracking-[0.25em] text-slate-400 block mb-3">
+                                        Selección Rápida
+                                    </span>
+                                    <div className="flex items-center gap-2 overflow-x-auto pb-2 custom-scrollbar">
+                                        {members.map(user => {
+                                            const isSelected = formData.participantes_ids.includes(user.id);
+                                            return (
+                                                <button
+                                                    key={user.id}
+                                                    type="button"
+                                                    onClick={() => toggleParticipant(user.id)}
+                                                    className={cn(
+                                                        "flex flex-col items-center gap-1.5 p-2 rounded-2xl border shrink-0 transition-transform duration-150 ease-out active:scale-90",
+                                                        isSelected
+                                                            ? "bg-cyan-500/10 border-cyan-400/50 shadow-sm"
+                                                            : "bg-slate-900/50 border-slate-800 opacity-50 grayscale hover:opacity-80"
                                                     )}
+                                                    title={user.nombre}
+                                                >
                                                     <div className={cn(
-                                                        "w-7 h-7 rounded-full border-2 flex items-center justify-center transition-all duration-500",
-                                                        isSelected ? "bg-[var(--primary)] border-[var(--primary)] shadow-lg" : "border-[var(--border-color)]"
+                                                        "w-10 h-10 rounded-full flex items-center justify-center text-xs font-black",
+                                                        isSelected
+                                                            ? "bg-cyan-500 text-white shadow-sm shadow-cyan-500/30"
+                                                            : "bg-slate-800 text-slate-400"
                                                     )}>
-                                                        {isSelected && <Check size={16} className="text-white stroke-[4]" />}
+                                                        {user.nombre?.charAt(0)?.toUpperCase() || '?'}
                                                     </div>
-                                                </div>
-                                            </motion.div>
-                                    );
-                                })}
-                            </AnimatePresence>
-                        </div>
-                    </motion.div>
+                                                    <span className={cn(
+                                                        "text-[9px] font-bold truncate max-w-[56px] text-center",
+                                                        isSelected ? "text-cyan-300" : "text-slate-400"
+                                                    )}>
+                                                        {user.nombre.split(' ')[0]}
+                                                    </span>
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
 
+                                {/* Resumen de Cuota */}
+                                {isPriceValid && selectedCount > 0 && (
+                                    <div className="p-4 bg-cyan-500/10 border border-cyan-500/20 rounded-2xl flex items-center justify-between shadow-sm">
+                                        <div className="flex items-center gap-2.5">
+                                            <div className="w-8 h-8 rounded-xl bg-cyan-500/20 text-cyan-400 flex items-center justify-center shrink-0">
+                                                <Users size={16} />
+                                            </div>
+                                            <div>
+                                                <span className="text-[9px] font-black uppercase tracking-wider text-cyan-400 block">
+                                                    Cuota por persona
+                                                </span>
+                                                <span className="text-xs font-bold text-slate-300">
+                                                    Entre {selectedCount} participantes
+                                                </span>
+                                            </div>
+                                        </div>
+                                        <span className="text-xl font-black font-mono text-cyan-300">
+                                            ${sharePerPerson}
+                                        </span>
+                                    </div>
+                                )}
+
+                                {/* Lista Detallada con Checkboxes Táctiles */}
+                                <div className="space-y-2.5 max-h-[380px] overflow-y-auto pr-1 custom-scrollbar">
+                                    <AnimatePresence mode="popLayout">
+                                        {members.map((user) => {
+                                            const isSelected = formData.participantes_ids.includes(user.id);
+                                            const initial = user.nombre?.charAt(0)?.toUpperCase() || '?';
+
+                                            return (
+                                                <motion.div
+                                                    key={user.id}
+                                                    layout
+                                                    onClick={() => toggleParticipant(user.id)}
+                                                    className={cn(
+                                                        "group flex items-center justify-between p-3.5 sm:p-4 rounded-2xl border cursor-pointer",
+                                                        "active:scale-[0.98] transition-transform duration-150 ease-out select-none",
+                                                        isSelected
+                                                            ? "bg-slate-900 border-cyan-500/40 shadow-sm"
+                                                            : "bg-slate-900/30 border-slate-800/60 opacity-40 hover:opacity-75"
+                                                    )}
+                                                >
+                                                    <div className="flex items-center gap-3 min-w-0">
+                                                        <div className={cn(
+                                                            "w-10 h-10 rounded-xl flex items-center justify-center font-black text-xs shrink-0 transition-colors duration-150",
+                                                            isSelected ? "bg-cyan-500 text-white" : "bg-slate-800 text-slate-400"
+                                                        )}>
+                                                            {initial}
+                                                        </div>
+                                                        <div className="min-w-0">
+                                                            <span className={cn(
+                                                                "font-black text-xs uppercase tracking-tight truncate block",
+                                                                isSelected ? "text-white" : "text-slate-400"
+                                                            )}>
+                                                                {user.nombre || 'Usuario'}
+                                                            </span>
+                                                            <span className="text-[9px] font-bold text-slate-400">
+                                                                {isSelected ? `${Math.round(100 / selectedCount)}% del total` : 'No participa'}
+                                                            </span>
+                                                        </div>
+                                                    </div>
+
+                                                    <div className="flex items-center gap-3 shrink-0">
+                                                        {isSelected && isPriceValid && (
+                                                            <span className="text-sm font-black font-mono text-cyan-300">
+                                                                ${sharePerPerson}
+                                                            </span>
+                                                        )}
+                                                        <div className={cn(
+                                                            "w-6 h-6 rounded-lg border flex items-center justify-center transition-colors duration-150",
+                                                            isSelected 
+                                                                ? "bg-cyan-500 border-cyan-400 text-white shadow-sm" 
+                                                                : "border-slate-700 bg-slate-800/40"
+                                                        )}>
+                                                            {isSelected && <Check size={14} className="stroke-[3]" />}
+                                                        </div>
+                                                    </div>
+                                                </motion.div>
+                                            );
+                                        })}
+                                    </AnimatePresence>
+                                </div>
+                            </motion.div>
                         </div>
 
-                        {/* Botón Flotante para Móvil (Oculto en Escritorio) */}
-                        <motion.div
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ delay: 0.3 }}
-                            className="lg:hidden pt-6"
-                        >
-                            <button
-                                className={cn(
-                                    "w-full h-20 text-white rounded-[2rem] shadow-2xl flex items-center justify-center gap-4 active:scale-[0.97] transition-all overflow-hidden relative group",
-                                    (!isFormValid)
-                                        ? "bg-slate-300 dark:bg-slate-800 cursor-not-allowed shadow-none"
-                                        : "bg-[var(--primary)] shadow-[var(--primary)]/30"
-                                )}
-                                onClick={handleSubmit}
-                                disabled={!isFormValid}
-                            >
-                                {loading ? (
-                                    <div className="animate-spin rounded-full h-6 w-6 border-2 border-white/30 border-t-white" />
-                                ) : (
-                                    isEditing ? <Pencil size={24} /> : <Check size={28} className="stroke-[3]" />
-                                )}
-                                <span className="uppercase tracking-[0.2em] font-black text-sm">
-                                    {loading ? 'Guardando...' : (isEditing ? 'Actualizar Gasto' : 'Confirmar Gasto')}
-                                </span>
-                            </button>
-                        </motion.div>
                     </div>
                 </main>
+
+                {/* ── Barra de Acción Fija Inferior en Móvil ── */}
+                <div className="lg:hidden fixed bottom-0 left-0 right-0 p-4 bg-[#0f172a]/95 backdrop-blur-md border-t border-slate-800/80 z-40 shadow-2xl">
+                    <button
+                        type="button"
+                        disabled={!isFormValid}
+                        onClick={handleSubmit}
+                        className={cn(
+                            "w-full h-14 rounded-2xl text-white font-black uppercase tracking-wider text-xs shadow-lg flex items-center justify-center gap-2",
+                            "active:scale-[0.98] transition-transform duration-150 ease-out",
+                            !isFormValid
+                                ? "bg-slate-800 text-slate-500 cursor-not-allowed shadow-none border border-slate-700/50"
+                                : "bg-gradient-to-r from-cyan-500 to-blue-600 shadow-cyan-500/25"
+                        )}
+                    >
+                        {loading ? (
+                            <>
+                                <Loader2 size={16} className="animate-spin" />
+                                <span>Guardando...</span>
+                            </>
+                        ) : (
+                            <>
+                                {isEditing ? <Pencil size={18} /> : <Check size={18} className="stroke-[3]" />}
+                                <span>{isEditing ? 'Actualizar Gasto' : `Confirmar Gasto ${isPriceValid ? `$${formData.precio}` : ''}`}</span>
+                            </>
+                        )}
+                    </button>
+                </div>
             </div>
         </div>
     );

@@ -114,10 +114,10 @@ export const SettleView = ({ userShare: rawUserShare }: SettleViewProps) => {
                             key={m.id}
                             onClick={() => setMethod(m.id as any)}
                             className={cn(
-                                "flex items-center gap-4 p-5 rounded-3xl border-2 transition-all text-left relative overflow-hidden",
+                                "flex items-center gap-4 p-5 rounded-3xl border-2 transition-transform duration-200 ease-out active:scale-[0.98] text-left relative overflow-hidden",
                                 method === m.id 
-                                    ? "bg-[var(--primary)]/10 border-[var(--primary)] shadow-lg shadow-[var(--primary)]/5" 
-                                    : "bg-[var(--bg-card)] border-[var(--border-color)] hover:border-[var(--primary)]/30"
+                                    ? "bg-blue-600/10 border-blue-500 shadow-lg shadow-blue-600/10" 
+                                    : "bg-[#0f172a] border-slate-800 hover:border-slate-700"
                             )}
                         >
                             {method === m.id && (
@@ -149,7 +149,7 @@ export const SettleView = ({ userShare: rawUserShare }: SettleViewProps) => {
             <button 
                 onClick={handleSettle}
                 disabled={loading || numericAmount <= 0}
-                className="w-full bg-[var(--primary)] text-white font-black uppercase tracking-widest py-6 rounded-3xl shadow-xl shadow-[var(--primary)]/20 hover:scale-[1.01] active:scale-[0.99] transition-all disabled:opacity-50 disabled:cursor-not-allowed border-t border-white/10"
+                className="w-full bg-blue-600 hover:bg-blue-500 text-white font-black uppercase tracking-widest py-5 rounded-2xl shadow-xl shadow-blue-600/30 hover:scale-[1.01] active:scale-[0.98] transition-transform duration-200 ease-out disabled:opacity-40 disabled:cursor-not-allowed border-t border-white/10"
             >
                 {loading ? (
                     <div className="flex items-center justify-center gap-3">

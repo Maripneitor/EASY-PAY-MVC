@@ -1,12 +1,14 @@
-import { Navigate, Outlet, useLocation, useParams } from 'react-router-dom';
+import { Navigate, Outlet, useLocation } from 'react-router-dom';
 import { useAuthContext } from '../context/AuthContext';
+import { usePermissions } from '../hooks/usePermissions';
 import { ROUTES } from '../../infrastructure/routes';
 import { STORAGE_KEYS } from '../../infrastructure/localStorage/storage-keys';
 import { toast } from 'sonner';
-import { useEffect, useRef } from 'react';
+import { useRef } from 'react';
 
 export const ProtectedRoute = () => {
-    const { isAuthenticated, isLoading, user } = useAuthContext();
+    const { isAuthenticated, isLoading } = useAuthContext();
+    const { isAdmin, canWriteExpenses } = usePermissions();
     const token = localStorage.getItem(STORAGE_KEYS.AUTH_TOKEN);
     const tempUserId = localStorage.getItem('temp_userId');
     const location = useLocation();
@@ -27,16 +29,7 @@ export const ProtectedRoute = () => {
         return <Navigate to={ROUTES.AUTH} replace state={{ from: location.pathname }} />;
     }
 
-    // 3. Calculo de roles y permisos
-    const userRoles = (user?.roles || ['Usuario Regular']).map((r: string) => r.toLowerCase());
-    const isAdmin = userRoles.includes('administrador') || userRoles.includes('admin');
-    const isEditor = userRoles.includes('editor');
-    const userPermissions = user?.permissions || [];
-
-    const canWriteGroups = isAdmin || isEditor || userPermissions.includes('groups:write');
-    const canWriteExpenses = isAdmin || isEditor || userPermissions.includes('expenses:write');
-
-    // 4. Control de acceso para Dashboard de Administracion
+    // 3. Control de acceso para Dashboard de Administracion
     if (location.pathname === ROUTES.ADMIN && !isAdmin) {
         if (lastDeniedPathRef.current !== location.pathname) {
             lastDeniedPathRef.current = location.pathname;
@@ -45,20 +38,7 @@ export const ProtectedRoute = () => {
         return <Navigate to={ROUTES.DASHBOARD} replace />;
     }
 
-    // 5. Control de acceso para Crear Grupo (Solo Admin y Editor tienen permiso groups:write)
-    if (location.pathname === ROUTES.CREATE_GROUP && !canWriteGroups) {
-        // Permitir si viene con el parametro ?tab=join
-        const searchParams = new URLSearchParams(location.search);
-        if (searchParams.get('tab') !== 'join') {
-            if (lastDeniedPathRef.current !== location.pathname) {
-                lastDeniedPathRef.current = location.pathname;
-                toast.info('Tu rol actual permite unirte a grupos existentes mediante codigo.');
-            }
-            return <Navigate to={`${ROUTES.CREATE_GROUP}?tab=join`} replace />;
-        }
-    }
-
-    // 6. Control de acceso para Registrar / Editar Gastos (expenses:write)
+    // 4. Control de acceso para Registrar / Editar Gastos (expenses:write)
     const isExpenseWriteRoute = location.pathname.includes('/registrar-gasto') || location.pathname.includes('/editar-item');
     if (isExpenseWriteRoute && !canWriteExpenses) {
         if (lastDeniedPathRef.current !== location.pathname) {

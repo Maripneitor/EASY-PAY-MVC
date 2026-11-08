@@ -1,4 +1,5 @@
 import os
+import uuid
 import jwt
 import bcrypt
 from datetime import datetime, timedelta, timezone
@@ -44,9 +45,10 @@ class AuthService:
         nombre: str,
         roles: Optional[List[str]] = None,
         permissions: Optional[List[str]] = None,
-        expires_delta: Optional[timedelta] = None
+        expires_delta: Optional[timedelta] = None,
+        jti: Optional[str] = None
     ) -> str:
-        """Genera un Access Token JWT de corta duración firmado con roles y permisos"""
+        """Genera un Access Token JWT de corta duración firmado con roles, permisos y jti"""
         expire = datetime.now(timezone.utc) + (expires_delta or timedelta(minutes=self.access_expire_minutes))
         payload = {
             "sub": user_id,
@@ -55,6 +57,7 @@ class AuthService:
             "roles": roles or ["Usuario Regular"],
             "permissions": permissions or [],
             "token_type": "access",
+            "jti": jti or str(uuid.uuid4()),
             "iat": datetime.now(timezone.utc),
             "exp": expire
         }
@@ -64,7 +67,8 @@ class AuthService:
         self,
         user_id: str,
         email: str,
-        expires_delta: Optional[timedelta] = None
+        expires_delta: Optional[timedelta] = None,
+        jti: Optional[str] = None
     ) -> str:
         """Genera un Refresh Token JWT de mayor duración para renovar credenciales"""
         expire = datetime.now(timezone.utc) + (expires_delta or timedelta(days=self.refresh_expire_days))
@@ -72,6 +76,7 @@ class AuthService:
             "sub": user_id,
             "email": email,
             "token_type": "refresh",
+            "jti": jti or str(uuid.uuid4()),
             "iat": datetime.now(timezone.utc),
             "exp": expire
         }

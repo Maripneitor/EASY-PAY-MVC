@@ -9,7 +9,8 @@ AVAILABLE_RESOURCES = [
     {"id": "wallets", "name": "Billeteras / Tarjetas"},
     {"id": "users", "name": "Gestión de Usuarios"},
     {"id": "roles", "name": "Roles y Permisos"},
-    {"id": "audit", "name": "Auditoría del Sistema"}
+    {"id": "audit", "name": "Auditoría del Sistema"},
+    {"id": "stats", "name": "Estadísticas y Reportes"}
 ]
 
 AVAILABLE_ACTIONS = [

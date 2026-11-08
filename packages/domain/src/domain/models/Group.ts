@@ -18,6 +18,7 @@ export interface Group {
     leaderId: string;       // Member id of the group leader
     version: number;        // Sequence number for synchronization
     createdAt?: string;     // ISO 8601 date string
+    pendingInvitations?: any[];
 }
 
 /** Lightweight summary used in list views (Dashboard). */

@@ -46,8 +46,10 @@ export class ApiGroupRepository implements GroupRepository {
     // ── joinGroup ─────────────────────────────────────────────────────────────
     async joinGroup(code: string, member: Member): Promise<Group> {
         try {
-            const res = await httpClient.post<any>(`/groups/join`, { codigo: code, user_id: member.id });
-            return this.getGroup(res.data.group_id);
+            const cleanCode = (code || '').trim().toUpperCase();
+            const res = await httpClient.post<any>(`/groups/join`, { codigo: cleanCode, user_id: member.id });
+            const groupId = res.data?.group_id || res.data?.id;
+            return this.getGroup(groupId);
         } catch (e) {
             return handleApiError(e);
         }
@@ -192,6 +194,70 @@ export class ApiGroupRepository implements GroupRepository {
     async removeMember(groupId: string, userId: string): Promise<void> {
         try {
             await httpClient.delete(`/groups/${groupId}/members/${userId}`);
+        } catch (e) {
+            return handleApiError(e);
+        }
+    }
+
+    // ── Invitaciones ─────────────────────────────────────────────────────────
+    async inviteMember(groupId: string, email: string): Promise<any> {
+        try {
+            const res = await httpClient.post(`/groups/${groupId}/invite`, { email });
+            return res.data;
+        } catch (e) {
+            return handleApiError(e);
+        }
+    }
+
+    async getGroupInvitations(groupId: string): Promise<any[]> {
+        try {
+            const res = await httpClient.get(`/groups/${groupId}/invitations`);
+            return res.data;
+        } catch (e) {
+            return handleApiError(e);
+        }
+    }
+
+    async getPendingInvitations(): Promise<any[]> {
+        try {
+            const res = await httpClient.get(`/groups/invitations/pending`);
+            return res.data;
+        } catch (e) {
+            return handleApiError(e);
+        }
+    }
+
+    async acceptInvitation(invitationId: string): Promise<any> {
+        try {
+            const res = await httpClient.post(`/groups/invitations/${invitationId}/accept`);
+            return res.data;
+        } catch (e) {
+            return handleApiError(e);
+        }
+    }
+
+    async rejectInvitation(invitationId: string): Promise<any> {
+        try {
+            const res = await httpClient.post(`/groups/invitations/${invitationId}/reject`);
+            return res.data;
+        } catch (e) {
+            return handleApiError(e);
+        }
+    }
+
+    async cancelInvitation(invitationId: string): Promise<any> {
+        try {
+            const res = await httpClient.delete(`/groups/invitations/${invitationId}`);
+            return res.data;
+        } catch (e) {
+            return handleApiError(e);
+        }
+    }
+
+    async resendInvitation(invitationId: string): Promise<any> {
+        try {
+            const res = await httpClient.post(`/groups/invitations/${invitationId}/resend`);
+            return res.data;
         } catch (e) {
             return handleApiError(e);
         }

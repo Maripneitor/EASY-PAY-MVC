@@ -19,6 +19,7 @@ export interface ApiGroup {
     total?: number;
     version?: number;
     fecha_creacion?: string;
+    pending_invitations?: any[];
 }
 
 /**
@@ -37,6 +38,7 @@ export const toGroup = (apiGroup: ApiGroup): Group => ({
     total:     apiGroup.total ?? 0,
     version:   apiGroup.version ?? 1,
     createdAt: apiGroup.fecha_creacion,
+    pendingInvitations: apiGroup.pending_invitations ?? [],
 });
 
 export const toGroupList = (apiGroups: ApiGroup[]): Group[] =>

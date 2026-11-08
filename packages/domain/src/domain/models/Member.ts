@@ -8,4 +8,6 @@ export interface Member {
     role: MemberRole;
     avatarUrl?: string;
     hasPaid?: boolean;
+    status?: 'ACTIVE' | 'PENDING' | string;
+    email?: string;
 }

@@ -27,6 +27,7 @@ class BaseController(ABC):
         payload = {
             "status": "error",
             "error_code": code,
+            "code": code,
             "message": message
         }
         payload.update(kwargs)

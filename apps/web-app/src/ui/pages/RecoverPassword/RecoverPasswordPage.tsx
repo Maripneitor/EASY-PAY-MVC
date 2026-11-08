@@ -1,5 +1,19 @@
-import React, { useState } from 'react';
-import { Mail, ArrowLeft, Sun, Moon, Lock, Loader2, KeyRound } from 'lucide-react';
+import React, { useState, useMemo } from 'react';
+import { 
+    Mail, 
+    ArrowLeft, 
+    Sun, 
+    Moon, 
+    Lock, 
+    Loader2, 
+    KeyRound, 
+    Eye, 
+    EyeOff, 
+    Check, 
+    X, 
+    ShieldCheck, 
+    AlertCircle 
+} from 'lucide-react';
 import styles from './RecoverPassword.module.css';
 import { useNavigate } from 'react-router-dom';
 import { useTheme } from '../../context/ThemeContext';
@@ -25,6 +39,10 @@ export const RecoverPasswordPage = () => {
     const [code, setCode] = useState('');
     const [newPassword, setNewPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
+    const [showNewPassword, setShowNewPassword] = useState(false);
+    const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+    const [confirmTouched, setConfirmTouched] = useState(false);
+
     const [loading, setLoading] = useState(false);
     const [resending, setResending] = useState(false);
     const [countdown, setCountdown] = useState(0);
@@ -42,6 +60,52 @@ export const RecoverPasswordPage = () => {
     const [tempToken, setTempToken] = useState<string | null>(null);
     const [tempUser, setTempUser] = useState<any | null>(null);
 
+    // --- Validación de fortaleza y requisitos en tiempo real ---
+    const passwordRequirements = useMemo(() => {
+        return [
+            { id: 'length', label: 'Al menos 8 caracteres', met: newPassword.length >= 8 },
+            { id: 'uppercase', label: 'Al menos una letra mayúscula (A-Z)', met: /[A-Z]/.test(newPassword) },
+            { id: 'number', label: 'Al menos un número (0-9)', met: /[0-9]/.test(newPassword) },
+            { id: 'special', label: 'Un símbolo especial (@, $, !, %, *, #, ?, &)', met: /[^A-Za-z0-9]/.test(newPassword) },
+        ];
+    }, [newPassword]);
+
+    const strengthScore = useMemo(() => {
+        if (!newPassword) return 0;
+        let score = 0;
+        passwordRequirements.forEach(req => {
+            if (req.met) score += 1;
+        });
+        if (newPassword.length >= 12 && score === 4) score += 1; // bonus longitud
+        return score; // 0 a 5
+    }, [newPassword, passwordRequirements]);
+
+    const strengthMeta = useMemo(() => {
+        if (!newPassword) return { label: '', percent: 0, color: 'transparent' };
+        switch (strengthScore) {
+            case 1:
+                return { label: 'Muy Débil', percent: 20, color: '#ef4444' };
+            case 2:
+                return { label: 'Débil', percent: 40, color: '#f97316' };
+            case 3:
+                return { label: 'Media', percent: 65, color: '#eab308' };
+            case 4:
+                return { label: 'Fuerte', percent: 85, color: '#3b82f6' };
+            case 5:
+            default:
+                return { label: 'Muy Fuerte', percent: 100, color: '#10b981' };
+        }
+    }, [strengthScore, newPassword]);
+
+    const passwordsMatch = useMemo(() => {
+        return newPassword.length > 0 && confirmPassword.length > 0 && newPassword === confirmPassword;
+    }, [newPassword, confirmPassword]);
+
+    const isStep3Valid = useMemo(() => {
+        const hasMinReqs = passwordRequirements.filter(r => r.met).length >= 3 && newPassword.length >= 8;
+        return hasMinReqs && passwordsMatch;
+    }, [passwordRequirements, newPassword, passwordsMatch]);
+
     const handleRequestReset = async (e: React.FormEvent) => {
         e.preventDefault();
         setLoading(true);
@@ -53,7 +117,7 @@ export const RecoverPasswordPage = () => {
                 if (data.user_id) {
                     setUserId(data.user_id);
                     setStep(2);
-                    setCountdown(5); // Iniciar espera al entrar en paso 2
+                    setCountdown(5);
                 } else {
                     toast.info(data.message);
                 }
@@ -71,7 +135,7 @@ export const RecoverPasswordPage = () => {
         try {
             await userRepository.requestPasswordReset(email);
             toast.success('Código reenviado');
-            setCountdown(5); // 5 segundos de espera
+            setCountdown(5);
         } catch (error: any) {
             toast.error(error.message || 'Error al reenviar código');
         } finally {
@@ -87,7 +151,6 @@ export const RecoverPasswordPage = () => {
             
             if (data.status === 'success') {
                 toast.success('Código verificado correctamente');
-                // Guardamos el token y usuario temporalmente para el auto-login final
                 if (data.access_token) {
                     setTempToken(data.access_token);
                     setTempUser(data.user);
@@ -109,6 +172,10 @@ export const RecoverPasswordPage = () => {
             toast.error('Las contraseñas no coinciden');
             return;
         }
+        if (newPassword.length < 8) {
+            toast.error('La contraseña debe tener al menos 8 caracteres');
+            return;
+        }
         
         setLoading(true);
         try {
@@ -119,13 +186,11 @@ export const RecoverPasswordPage = () => {
             
             toast.success('Contraseña actualizada correctamente');
 
-            // MEJORA: Auto-login si tenemos el token de la verificación
             if (tempToken && tempUser) {
                 updateUserSession(tempUser, tempToken);
                 toast.success('Sesión iniciada automáticamente');
                 navigate(ROUTES.DASHBOARD);
             } else {
-                // Si no hay token (poco probable), mandamos al login manual
                 navigate(ROUTES.AUTH);
             }
         } catch (error: any) {
@@ -137,11 +202,11 @@ export const RecoverPasswordPage = () => {
 
     return (
         <div className={styles.authPage}>
-            <button className={styles.backBtn} onClick={() => navigate(ROUTES.LANDING)}>
+            <button className={styles.backBtn} onClick={() => navigate(ROUTES.LANDING)} aria-label="Regresar al inicio">
                 <ArrowLeft size={18} />
                 <span>Regresar al inicio</span>
             </button>
-            <button className={styles.themeToggle} onClick={toggleTheme} aria-label="Toggle theme">
+            <button className={styles.themeToggle} onClick={toggleTheme} aria-label={isDark ? "Cambiar a modo claro" : "Cambiar a modo oscuro"}>
                 {isDark ? <Sun size={20} /> : <Moon size={20} />}
             </button>
             <div className={styles.floatingCircle1} />
@@ -150,12 +215,19 @@ export const RecoverPasswordPage = () => {
             <main className={styles.container}>
                 <div className={styles.header}>
                     <div className={styles.logoWrapper}>
-                        <img src="/assets/images/logo-ep.png" alt="Logo" className={styles.logoImage} />
+                        <img src="/assets/images/logo-ep.png" alt="Logo de Easy-Pay" className={styles.logoImage} />
                     </div>
                     <h1 className={styles.title}>Easy-Pay</h1>
                 </div>
 
                 <div className={styles.glassCard}>
+                    {/* Indicador de progreso de pasos */}
+                    <div className={styles.stepsIndicator} aria-label={`Paso ${step} de 3`}>
+                        <span className={`${styles.stepDot} ${step >= 1 ? styles.activeDot : ''}`} />
+                        <span className={`${styles.stepDot} ${step >= 2 ? styles.activeDot : ''}`} />
+                        <span className={`${styles.stepDot} ${step >= 3 ? styles.activeDot : ''}`} />
+                    </div>
+
                     {step === 1 && (
                         <>
                             <div className="text-center mb-8">
@@ -165,11 +237,11 @@ export const RecoverPasswordPage = () => {
                                 </p>
                             </div>
 
-                            <form className={styles.form} onSubmit={handleRequestReset}>
+                            <form className={styles.form} onSubmit={handleRequestReset} noValidate={false}>
                                 <div className={styles.inputGroup}>
                                     <label htmlFor="email">Email</label>
                                     <div className={styles.inputWrapper}>
-                                        <Mail className={styles.inputIcon} size={20} />
+                                        <Mail className={styles.inputIcon} size={20} aria-hidden="true" />
                                         <input
                                             type="email"
                                             id="email"
@@ -178,12 +250,21 @@ export const RecoverPasswordPage = () => {
                                             onChange={(e) => setEmail(e.target.value)}
                                             required
                                             disabled={loading}
+                                            autoComplete="email"
+                                            tabIndex={1}
                                         />
                                     </div>
                                 </div>
 
-                                <button type="submit" className={styles.primaryBtn} disabled={loading}>
-                                    {loading ? <Loader2 className="animate-spin" size={20} /> : 'Enviar código'}
+                                <button type="submit" className={styles.primaryBtn} disabled={loading || !email.trim()} tabIndex={2}>
+                                    {loading ? (
+                                        <>
+                                            <Loader2 className="animate-spin" size={20} aria-hidden="true" />
+                                            <span>Enviando código...</span>
+                                        </>
+                                    ) : (
+                                        'Enviar código'
+                                    )}
                                 </button>
                             </form>
                         </>
@@ -202,7 +283,7 @@ export const RecoverPasswordPage = () => {
                                 <div className={styles.inputGroup}>
                                     <label htmlFor="code">Código de verificación</label>
                                     <div className={styles.inputWrapper}>
-                                        <KeyRound className={styles.inputIcon} size={20} />
+                                        <KeyRound className={styles.inputIcon} size={20} aria-hidden="true" />
                                         <input
                                             type="text"
                                             id="code"
@@ -217,12 +298,21 @@ export const RecoverPasswordPage = () => {
                                             inputMode="numeric"
                                             autoComplete="one-time-code"
                                             style={{ letterSpacing: '0.2em', textAlign: 'center', fontSize: '1.5rem', fontWeight: 'bold' }}
+                                            tabIndex={1}
+                                            autoFocus
                                         />
                                     </div>
                                 </div>
 
-                                <button type="submit" className={styles.primaryBtn} disabled={loading}>
-                                    {loading ? <Loader2 className="animate-spin" size={20} /> : 'Verificar código'}
+                                <button type="submit" className={styles.primaryBtn} disabled={loading || code.length < 4} tabIndex={2}>
+                                    {loading ? (
+                                        <>
+                                            <Loader2 className="animate-spin" size={20} aria-hidden="true" />
+                                            <span>Verificando...</span>
+                                        </>
+                                    ) : (
+                                        'Verificar código'
+                                    )}
                                 </button>
 
                                 <div className="text-center mt-4">
@@ -231,8 +321,9 @@ export const RecoverPasswordPage = () => {
                                         onClick={handleResendCode}
                                         disabled={loading || resending || countdown > 0}
                                         className="text-xs font-bold text-[var(--primary)] hover:underline disabled:opacity-50 disabled:no-underline flex items-center justify-center gap-2 mx-auto"
+                                        tabIndex={3}
                                     >
-                                        {resending && <Loader2 className="animate-spin" size={12} />}
+                                        {resending && <Loader2 className="animate-spin" size={12} aria-hidden="true" />}
                                         {countdown > 0 
                                             ? `Reenviar en ${countdown}s` 
                                             : '¿No recibiste el código? Reenviar'
@@ -245,20 +336,21 @@ export const RecoverPasswordPage = () => {
 
                     {step === 3 && (
                         <>
-                            <div className="text-center mb-8">
+                            <div className="text-center mb-6">
                                 <h2 className={styles.formTitle}>Nueva contraseña</h2>
                                 <p className={styles.subtitle} style={{ marginTop: '0.5rem', lineHeight: '1.5' }}>
-                                    Ingresa tu nueva contraseña para acceder a tu cuenta.
+                                    Crea una contraseña segura para proteger tu cuenta de Easy-Pay.
                                 </p>
                             </div>
 
                             <form className={styles.form} onSubmit={handleChangePassword}>
+                                {/* Campo Nueva Contraseña */}
                                 <div className={styles.inputGroup}>
                                     <label htmlFor="newPassword">Nueva contraseña</label>
                                     <div className={styles.inputWrapper}>
-                                        <Lock className={styles.inputIcon} size={20} />
+                                        <Lock className={styles.inputIcon} size={20} aria-hidden="true" />
                                         <input
-                                            type="password"
+                                            type={showNewPassword ? 'text' : 'password'}
                                             id="newPassword"
                                             placeholder="••••••••"
                                             value={newPassword}
@@ -266,29 +358,142 @@ export const RecoverPasswordPage = () => {
                                             required
                                             minLength={8}
                                             disabled={loading}
+                                            autoComplete="new-password"
+                                            className={styles.hasToggleBtn}
+                                            aria-describedby="password-strength-info"
+                                            aria-invalid={newPassword.length > 0 && newPassword.length < 8}
+                                            tabIndex={1}
+                                            autoFocus
                                         />
+                                        <button
+                                            type="button"
+                                            className={styles.togglePasswordBtn}
+                                            onClick={() => setShowNewPassword(!showNewPassword)}
+                                            aria-label={showNewPassword ? 'Ocultar nueva contraseña' : 'Ver nueva contraseña'}
+                                            tabIndex={2}
+                                        >
+                                            {showNewPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                                        </button>
                                     </div>
+
+                                    {/* Medidor de Fortaleza de Contraseña */}
+                                    {newPassword.length > 0 && (
+                                        <div className={styles.strengthMeter} id="password-strength-info" aria-live="polite">
+                                            <div className={styles.strengthBarContainer}>
+                                                <div className={styles.strengthBarTrack}>
+                                                    <div 
+                                                        className={styles.strengthBarFill} 
+                                                        style={{ 
+                                                            width: `${strengthMeta.percent}%`, 
+                                                            backgroundColor: strengthMeta.color 
+                                                        }}
+                                                    />
+                                                </div>
+                                                <span 
+                                                    className={styles.strengthLabel} 
+                                                    style={{ color: strengthMeta.color }}
+                                                >
+                                                    {strengthMeta.label}
+                                                </span>
+                                            </div>
+
+                                            {/* Checklist de Requisitos en Tiempo Real */}
+                                            <ul className={styles.requirementsList}>
+                                                {passwordRequirements.map(req => (
+                                                    <li 
+                                                        key={req.id} 
+                                                        className={`${styles.requirementItem} ${req.met ? styles.reqMet : ''}`}
+                                                    >
+                                                        {req.met ? (
+                                                            <Check size={14} className="text-emerald-500" aria-hidden="true" />
+                                                        ) : (
+                                                            <X size={14} className="text-slate-400" aria-hidden="true" />
+                                                        )}
+                                                        <span>{req.label}</span>
+                                                    </li>
+                                                ))}
+                                            </ul>
+                                        </div>
+                                    )}
                                 </div>
 
-                                <div className={styles.inputGroup} style={{ marginTop: '1rem' }}>
+                                {/* Campo Confirmar Contraseña */}
+                                <div className={styles.inputGroup} style={{ marginTop: '0.75rem' }}>
                                     <label htmlFor="confirmPassword">Confirmar contraseña</label>
                                     <div className={styles.inputWrapper}>
-                                        <Lock className={styles.inputIcon} size={20} />
+                                        <Lock className={styles.inputIcon} size={20} aria-hidden="true" />
                                         <input
-                                            type="password"
+                                            type={showConfirmPassword ? 'text' : 'password'}
                                             id="confirmPassword"
                                             placeholder="••••••••"
                                             value={confirmPassword}
-                                            onChange={(e) => setConfirmPassword(e.target.value)}
+                                            onChange={(e) => {
+                                                setConfirmPassword(e.target.value);
+                                                if (!confirmTouched) setConfirmTouched(true);
+                                            }}
+                                            onBlur={() => setConfirmTouched(true)}
                                             required
                                             minLength={8}
                                             disabled={loading}
+                                            autoComplete="new-password"
+                                            className={`${styles.hasToggleBtn} ${
+                                                confirmTouched && confirmPassword
+                                                    ? passwordsMatch
+                                                        ? styles.inputSuccess
+                                                        : styles.inputError
+                                                    : ''
+                                            }`}
+                                            aria-invalid={confirmTouched && !!confirmPassword && !passwordsMatch}
+                                            aria-describedby="confirm-password-error"
+                                            tabIndex={3}
                                         />
+                                        <button
+                                            type="button"
+                                            className={styles.togglePasswordBtn}
+                                            onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                                            aria-label={showConfirmPassword ? 'Ocultar confirmación de contraseña' : 'Ver confirmación de contraseña'}
+                                            tabIndex={4}
+                                        >
+                                            {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                                        </button>
                                     </div>
+
+                                    {/* Mensajes de Validación en Tiempo Real */}
+                                    {confirmTouched && confirmPassword && (
+                                        <div id="confirm-password-error" aria-live="polite">
+                                            {passwordsMatch ? (
+                                                <div className={styles.successFeedback}>
+                                                    <Check size={14} aria-hidden="true" />
+                                                    <span>¡Las contraseñas coinciden!</span>
+                                                </div>
+                                            ) : (
+                                                <div className={styles.errorFeedback}>
+                                                    <AlertCircle size={14} aria-hidden="true" />
+                                                    <span>Las contraseñas no coinciden</span>
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
                                 </div>
 
-                                <button type="submit" className={styles.primaryBtn} disabled={loading}>
-                                    {loading ? <Loader2 className="animate-spin" size={20} /> : 'Cambiar contraseña'}
+                                <button 
+                                    type="submit" 
+                                    className={styles.primaryBtn} 
+                                    disabled={loading || !isStep3Valid}
+                                    tabIndex={5}
+                                    style={{ marginTop: '0.5rem' }}
+                                >
+                                    {loading ? (
+                                        <>
+                                            <Loader2 className="animate-spin" size={20} aria-hidden="true" />
+                                            <span>Cambiando contraseña...</span>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <ShieldCheck size={18} aria-hidden="true" />
+                                            <span>Cambiar contraseña</span>
+                                        </>
+                                    )}
                                 </button>
                             </form>
                         </>
@@ -301,8 +506,9 @@ export const RecoverPasswordPage = () => {
                             onClick={() => navigate(isAuthenticated ? ROUTES.PROFILE : ROUTES.AUTH)}
                             style={{ margin: '0 auto' }}
                             disabled={loading}
+                            tabIndex={6}
                         >
-                            <ArrowLeft size={18} />
+                            <ArrowLeft size={18} aria-hidden="true" />
                             <span>{isAuthenticated ? 'Cancelar y volver al Perfil' : 'Volver al inicio de sesión'}</span>
                         </button>
                     </div>

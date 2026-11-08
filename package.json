@@ -10,7 +10,9 @@
   "scripts": {
     "install:all": "npm install --force",
     "mobile": "npm start --workspace=mobile-app",
-    "web": "npm start --workspace=web-app",
+    "web": "npm run dev --workspace=web-app",
+    "dev:web": "npm run dev --workspace=web-app",
+    "dev:mobile": "npm start --workspace=mobile-app",
     "api": "npm start --workspace=api-backend"
   },
   "devDependencies": {

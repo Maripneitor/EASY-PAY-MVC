@@ -1,8 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { Bell, BellDot, X, Check, Trash2, Clock, DollarSign, Megaphone } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Bell, BellDot, X, Check, Trash2, Clock, DollarSign, Megaphone, UserPlus, Users, Loader2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuthContext } from '../../context/AuthContext';
 import { httpClient } from '../../../infrastructure/api/http-client';
+import { groupRepository } from '../../../infrastructure/api/repositories';
+import { ROUTES } from '../../../infrastructure/routes';
+import { toast } from 'sonner';
 import { cn } from '../../../infrastructure/utils';
 
 // Helper simple para tiempo relativo sin dependencias externas
@@ -22,6 +26,7 @@ const formatRelativeTime = (date: Date) => {
 };
 
 export const NotificationBell = () => {
+    const navigate = useNavigate();
     const { user } = useAuthContext();
     const [isOpen, setIsOpen] = useState(false);
     const [notifications, setNotifications] = useState<any[]>([]);
@@ -32,8 +37,15 @@ export const NotificationBell = () => {
         if (!user?.id) return;
         try {
             const res = await httpClient.get(`/notifications/${user.id}`);
-            setNotifications(res.data.notifications || []);
-            setUnreadCount(res.data.unread_count || 0);
+            const notifs = Array.isArray(res.data) 
+                ? res.data 
+                : (res.data.notifications || []);
+            setNotifications(notifs);
+            // Si el backend envía unread_count usamos ese, sino filtramos las que no tienen read: true
+            const unread = res.data.unread_count !== undefined 
+                ? res.data.unread_count 
+                : notifs.filter((n: any) => !n.read).length;
+            setUnreadCount(unread);
         } catch (error) {
             console.error("Error fetching notifications:", error);
         }
@@ -41,7 +53,7 @@ export const NotificationBell = () => {
 
     useEffect(() => {
         fetchNotifications();
-        const interval = setInterval(fetchNotifications, 15000); // Poll every 15s
+        const interval = setInterval(fetchNotifications, 10000); // Polling cada 10s
         return () => clearInterval(interval);
     }, [user?.id]);
 
@@ -54,9 +66,47 @@ export const NotificationBell = () => {
             await httpClient.post(`/groups/${group_id}/settlements/${settlement_id}/approve`, null, {
                 params: { current_user_id: user.id }
             });
-            await markAsRead(notif._id);
+            await markAsRead(notif._id || notif.id);
         } catch (error) {
             console.error("Error approving settlement from notification:", error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleAcceptInvitation = async (notif: any) => {
+        const invitationId = notif.invitation_id || notif.data?.invitation_id;
+        const groupId = notif.group_id || notif.data?.group_id;
+        if (!invitationId) return;
+
+        try {
+            setLoading(true);
+            const res = await groupRepository.acceptInvitation(invitationId);
+            toast.success("¡Te has unido al grupo exitosamente!");
+            await markAsRead(notif._id || notif.id);
+            setIsOpen(false);
+            const targetGroupId = res?.group_id || groupId;
+            if (targetGroupId) {
+                navigate(ROUTES.GROUP_DETAIL(targetGroupId));
+            }
+        } catch (error: any) {
+            toast.error(error.message || "Error al aceptar la invitación");
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleRejectInvitation = async (notif: any) => {
+        const invitationId = notif.invitation_id || notif.data?.invitation_id;
+        if (!invitationId) return;
+
+        try {
+            setLoading(true);
+            await groupRepository.rejectInvitation(invitationId);
+            toast.info("Invitación rechazada");
+            await markAsRead(notif._id || notif.id);
+        } catch (error: any) {
+            toast.error(error.message || "Error al rechazar invitación");
         } finally {
             setLoading(false);
         }
@@ -101,18 +151,19 @@ export const NotificationBell = () => {
         <div className="relative">
             <button 
                 onClick={() => setIsOpen(!isOpen)}
-                className="p-3 bg-white/10 hover:bg-white/20 rounded-2xl transition-all relative group border border-white/10 backdrop-blur-sm"
+                className="p-3 bg-white/10 hover:bg-white/20 dark:bg-slate-800/60 dark:hover:bg-slate-800/90 rounded-2xl transition-all relative group border border-black/5 dark:border-white/10 backdrop-blur-sm shadow-sm"
                 title="Notificaciones"
+                aria-label={unreadCount > 0 ? `Tienes ${unreadCount} notificaciones no leídas` : "Ver notificaciones"}
             >
                 {unreadCount > 0 ? (
                     <>
-                        <BellDot size={20} className="text-amber-400 animate-pulse" />
-                        <span className="absolute -top-1 -right-1 w-5 h-5 bg-rose-500 text-white text-[10px] font-black rounded-full flex items-center justify-center border-2 border-[var(--bg-body)]">
+                        <BellDot size={20} className="text-amber-500 animate-pulse" />
+                        <span className="absolute -top-1.5 -right-1.5 min-w-[20px] h-5 px-1 bg-rose-500 text-white text-[10px] font-black rounded-full flex items-center justify-center border-2 border-[var(--bg-body)] shadow-md animate-bounce">
                             {unreadCount > 9 ? '+9' : unreadCount}
                         </span>
                     </>
                 ) : (
-                    <Bell size={20} className="text-slate-400 group-hover:text-[var(--primary)]" />
+                    <Bell size={20} className="text-[var(--text-secondary)] group-hover:text-[var(--primary)] transition-colors" />
                 )}
             </button>
 
@@ -162,7 +213,8 @@ export const NotificationBell = () => {
                                         <div className="w-12 h-12 bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-4 text-slate-400">
                                             <Bell size={24} />
                                         </div>
-                                        <p className="text-xs font-black uppercase tracking-widest text-slate-400">No hay notificaciones</p>
+                                        <p className="text-xs font-black uppercase tracking-widest text-[var(--text-primary)]">No hay notificaciones</p>
+                                        <p className="text-[11px] text-[var(--text-secondary)] mt-1">Te avisaremos cuando haya actividad o cobros en tus grupos</p>
                                     </div>
                                 ) : (
                                     <div className="divide-y divide-[var(--border-color)]">
@@ -177,9 +229,13 @@ export const NotificationBell = () => {
                                                 <div className="flex gap-4">
                                                     <div className={cn(
                                                         "w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0",
-                                                        !n.read ? "bg-[var(--primary)] text-white shadow-lg shadow-[var(--primary)]/20" : "bg-slate-100 text-slate-500"
+                                                        n.type === 'GROUP_INVITATION' ? "bg-indigo-600 text-white shadow-lg shadow-indigo-600/30" : (
+                                                            !n.read ? "bg-[var(--primary)] text-white shadow-lg shadow-[var(--primary)]/20" : "bg-slate-100 text-slate-500"
+                                                        )
                                                     )}>
-                                                        {n.type === 'payment_received' ? (
+                                                        {n.type === 'GROUP_INVITATION' ? (
+                                                            <UserPlus size={18} />
+                                                        ) : n.type === 'payment_received' ? (
                                                             <DollarSign size={18} />
                                                         ) : n.type === 'reminder' ? (
                                                             <Clock size={18} />
@@ -189,11 +245,33 @@ export const NotificationBell = () => {
                                                     </div>
                                                     <div className="flex-1 min-w-0">
                                                         <p className="text-xs font-black text-[var(--text-primary)] uppercase tracking-tight mb-1">{n.title}</p>
-                                                        <p className="text-[11px] text-[var(--text-secondary)] leading-relaxed mb-2">{n.body}</p>
+                                                        <p className="text-[11px] text-[var(--text-secondary)] leading-relaxed mb-2">{n.message || n.body}</p>
+                                                        
+                                                        {/* Acciones para Invitación a Grupo */}
+                                                        {n.type === 'GROUP_INVITATION' && (
+                                                            <div className="flex items-center gap-2 mb-2 mt-1">
+                                                                <button
+                                                                    onClick={() => handleAcceptInvitation(n)}
+                                                                    disabled={loading}
+                                                                    className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white rounded-xl text-[10px] font-black uppercase tracking-wider flex items-center gap-1 shadow-sm transition-transform"
+                                                                >
+                                                                    <Check size={12} strokeWidth={3} />
+                                                                    <span>Aceptar</span>
+                                                                </button>
+                                                                <button
+                                                                    onClick={() => handleRejectInvitation(n)}
+                                                                    disabled={loading}
+                                                                    className="px-3 py-1.5 bg-slate-200 hover:bg-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 active:scale-95 text-slate-700 dark:text-slate-200 rounded-xl text-[10px] font-black uppercase tracking-wider transition-transform"
+                                                                >
+                                                                    Rechazar
+                                                                </button>
+                                                            </div>
+                                                        )}
+
                                                         <div className="flex items-center gap-3 text-[9px] font-bold text-slate-400 uppercase tracking-widest">
                                                             <span className="flex items-center gap-1">
                                                                 <Clock size={10} />
-                                                                {formatRelativeTime(new Date(n.created_at))}
+                                                                {n.created_at ? formatRelativeTime(new Date(n.created_at)) : 'reciente'}
                                                             </span>
                                                         </div>
                                                     </div>

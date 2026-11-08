@@ -7,10 +7,12 @@ from typing import Optional, Dict, Any, List
 from core.base_controller import BaseController
 from models.user_model import UserModel
 from models.role_model import RoleModel
+from models.session_model import SessionModel
 from schemas.user_schema import User, UserCreate, PasswordChange
 from services.auth_service import AuthService
 from services.email_service import EmailService
 from services.audit_service import AuditService
+from utils.user_agent_parser import parse_user_agent
 
 def sanitize_string(text: str) -> str:
     """Sanitiza strings para evitar inyecciones XSS y HTML malicioso"""
@@ -30,6 +32,7 @@ class UserController(BaseController):
         super().__init__()
         self._user_model = UserModel()
         self._role_model = RoleModel()
+        self._session_model = SessionModel()
         self._auth_service = AuthService()
         self._email_service = EmailService()
         self._audit_service = AuditService()
@@ -203,38 +206,60 @@ class UserController(BaseController):
                 "user_id": user_id_str
             }
 
-        # 6. Calcular roles y permisos dinámicos
-        roles = user.get("roles", ["Usuario Regular"])
-        admin_emails = ["mariomoguel05@gmail.com"] + [e.strip().lower() for e in os.getenv("ADMIN_EMAILS", "").split(",") if e.strip()]
-        if user_email and user_email.lower() in admin_emails and "Administrador" not in roles:
-            roles = ["Administrador"]
-            try:
-                await self._user_model.update_user(user_id_str, {"roles": ["Administrador"], "role": "Administrador"})
-            except Exception:
-                pass
+        # 6. Calcular roles y permisos dinámicos desde la base de datos
+        roles = user.get("roles")
+        if not roles:
+            roles = ["Usuario Regular"]
+
+        superadmin_email = (os.getenv("SUPERADMIN_EMAIL") or "mariomoguel05@gmail.com").strip().lower()
+        admin_emails = {superadmin_email} | {
+            e.strip().lower() for e in os.getenv("ADMIN_EMAILS", "").split(",") if e.strip()
+        }
+        if user_email and (user_email.strip().lower() in admin_emails):
+            if "Administrador" not in roles:
+                roles = ["Administrador"] + [r for r in roles if r != "Administrador"]
 
         permissions = list(await self._role_model.get_permissions_for_roles(roles))
 
-        # 7. Generar Tokens (Access Token de 15 min + Refresh Token de 7 días)
+        # 7. Generar Tokens (Access Token de 15 min + Refresh Token de 7 días) con jti vinculado a la sesión
+        import uuid
+        token_jti = str(uuid.uuid4())
         access_token = self._auth_service.create_access_token(
             user_id=user_id_str,
             email=user_email,
             nombre=user.get("nombre", ""),
             roles=roles,
-            permissions=permissions
+            permissions=permissions,
+            jti=token_jti
         )
         refresh_token = self._auth_service.create_refresh_token(
             user_id=user_id_str,
-            email=user_email
+            email=user_email,
+            jti=token_jti
         )
 
-        # 8. Registrar acceso exitoso en la auditoría del sistema
+        # 8. Registrar Sesión Activa en la colección ActiveSessions de MongoDB
+        try:
+            device_info = parse_user_agent(user_agent)
+            expires_at = datetime.now(timezone.utc) + timedelta(days=self._auth_service.refresh_expire_days)
+            await self._session_model.create_session(
+                user_id=user_id_str,
+                token_jti=token_jti,
+                ip_address=ip_address,
+                user_agent=user_agent,
+                device_info=device_info,
+                expires_at=expires_at
+            )
+        except Exception as e:
+            print(f"⚠️ [UserController] Error al registrar sesión activa: {e}")
+
+        # 9. Registrar acceso exitoso en la auditoría del sistema
         await self._audit_service.log_access(
             action="LOGIN_SUCCESS",
             user_id=user_id_str,
             user_email=user_email,
             resource="auth",
-            details={"roles": roles},
+            details={"roles": roles, "jti": token_jti},
             ip_address=ip_address,
             user_agent=user_agent
         )
@@ -278,6 +303,13 @@ class UserController(BaseController):
                 return self.error("Cuenta bloqueada temporalmente.", code="ACCOUNT_LOCKED")
 
         roles = user.get("roles", ["Usuario Regular"])
+        superadmin_email = (os.getenv("SUPERADMIN_EMAIL") or "mariomoguel05@gmail.com").strip().lower()
+        admin_emails = {superadmin_email} | {
+            e.strip().lower() for e in os.getenv("ADMIN_EMAILS", "").split(",") if e.strip()
+        }
+        if user_email_clean and (user_email_clean in admin_emails) and "Administrador" not in roles:
+            roles = ["Administrador"] + [r for r in roles if r != "Administrador"]
+
         permissions = list(await self._role_model.get_permissions_for_roles(roles))
 
         new_access_token = self._auth_service.create_access_token(
@@ -446,11 +478,12 @@ class UserController(BaseController):
         return self.error("No se pudo actualizar la contraseña", code="UPDATE_FAILED")
 
     async def get_profile(self, user_id: str) -> Optional[Dict[str, Any]]:
-        """Obtiene los datos del perfil de usuario"""
+        """Obtiene los datos del perfil de usuario con sus roles y permisos actualizados"""
         user = await self._user_model.get_user_by_id(user_id)
         if not user:
             return None
-        roles = user.get("roles", ["Usuario Regular"])
+        roles = user.get("roles") or ["Usuario Regular"]
+        permissions = list(await self._role_model.get_permissions_for_roles(roles))
         return {
             "id": str(user["_id"]),
             "nombre": user.get("nombre"),
@@ -460,6 +493,7 @@ class UserController(BaseController):
             "address": user.get("address"),
             "bank_accounts": user.get("bank_accounts", []),
             "roles": roles,
+            "permissions": permissions,
             "is_verified": user.get("is_verified", False),
             "2fa_enabled": user.get("two_factor", {}).get("enabled", False) or user.get("is_verified", False),
             "financial_profile": user.get("financial_profile") or {}
@@ -481,3 +515,62 @@ class UserController(BaseController):
         if success:
             return self.success("Perfil actualizado correctamente")
         return self.error("Error al actualizar el perfil", code="UPDATE_FAILED")
+
+    # --- Métodos para Gestión de Sesiones Activas en MongoDB ---
+    async def get_active_sessions(self, user_id: str, current_jti: Optional[str] = None) -> List[Dict[str, Any]]:
+        """Recupera la lista de sesiones reales de la base de datos MongoDB"""
+        sessions = await self._session_model.get_active_sessions(user_id)
+        results = []
+        for s in sessions:
+            is_curr = (current_jti and s.get("token_jti") == current_jti)
+            last_act = s.get("last_active")
+            last_act_str = last_act.strftime("%d/%m/%Y %H:%M UTC") if isinstance(last_act, datetime) else "Reciente"
+            results.append({
+                "id": str(s["_id"]),
+                "device": s.get("device", "Navegador Web"),
+                "device_type": s.get("device_type", "desktop"),
+                "browser": s.get("browser", "Desconocido"),
+                "os": s.get("os", "Desconocido"),
+                "ip": s.get("ip_address", "127.0.0.1"),
+                "location": s.get("location", "México"),
+                "lastActive": "Activa ahora" if is_curr else last_act_str,
+                "isCurrent": bool(is_curr)
+            })
+
+        # Si aún no tiene registros en ActiveSessions (ej. primer login con tokens viejos), inyectar sesión actual
+        if not results:
+            results.append({
+                "id": "current-session",
+                "device": "Navegador Web Actual",
+                "device_type": "desktop",
+                "browser": "Navegador Web",
+                "os": "Sistema Actual",
+                "ip": "127.0.0.1",
+                "location": "Tuxtla Gutiérrez, Chiapas, MX",
+                "lastActive": "Activa ahora",
+                "isCurrent": True
+            })
+        return results
+
+    async def revoke_session(self, user_id: str, session_id: str) -> bool:
+        """Invalida en la base de datos la sesión especificada"""
+        revoked = await self._session_model.revoke_session(session_id, user_id)
+        if revoked:
+            await self._audit_service.log_access(
+                action="SESSION_REVOKED",
+                user_id=user_id,
+                resource="auth",
+                details={"session_id": session_id}
+            )
+        return revoked
+
+    async def revoke_all_sessions(self, user_id: str, current_jti: Optional[str] = None) -> int:
+        """Invalida todas las sesiones remotas del usuario excepto la actual"""
+        count = await self._session_model.revoke_all_except(user_id, current_jti)
+        await self._audit_service.log_access(
+            action="ALL_SESSIONS_REVOKED",
+            user_id=user_id,
+            resource="auth",
+            details={"revoked_count": count}
+        )
+        return count

@@ -138,6 +138,8 @@ export const AnimatedRoutes = () => {
                             <Route path={ROUTES.RECOVER_PASSWORD} element={<PageTransition><RecoverPasswordPage /></PageTransition>} />
                             <Route path={ROUTES.RESET_PASSWORD} element={<PageTransition><RecoverPasswordPage /></PageTransition>} />
                             <Route path={ROUTES.QR_SCANNER} element={<PageTransition><JoinGroup /></PageTransition>} />
+                            <Route path={ROUTES.JOIN} element={<PageTransition><JoinGroup /></PageTransition>} />
+                            <Route path={ROUTES.UNIRSE} element={<PageTransition><JoinGroup /></PageTransition>} />
 
                             {/* Rutas protegidas */}
                             <Route element={<ProtectedRoute />}>

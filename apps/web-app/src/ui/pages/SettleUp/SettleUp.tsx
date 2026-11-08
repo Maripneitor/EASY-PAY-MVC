@@ -13,7 +13,7 @@ import {
     Landmark,
     Star
 } from 'lucide-react';
-import { useParams, useNavigate, useOutletContext } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { PageHeader } from '../../components/PageHeader/PageHeader';
 import { cn } from '../../../infrastructure/utils';
 import { useGroupDetail } from '../GroupDetail/useGroupDetail';
@@ -30,7 +30,6 @@ export const SettleUp = () => {
     const { id } = useParams();
     const navigate = useNavigate();
     const queryClient = useQueryClient();
-    const { toggleSidebar } = useOutletContext<{ toggleSidebar: () => void }>();
     const { userShare, balances, membersData, selectedBankAccounts, status, adminId, isFetchingGroup: loading } = useGroupDetail(id || "");
     const { copyToClipboard, copiedId } = useClipboard();
     
@@ -165,7 +164,6 @@ export const SettleUp = () => {
             <PageHeader 
                 title="Liquidar Deuda"
                 onBack={() => navigate(-1)}
-                onMenuClick={toggleSidebar}
             />
             
             {/* Amount Card */}

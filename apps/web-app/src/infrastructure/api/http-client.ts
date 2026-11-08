@@ -131,6 +131,26 @@ httpClient.interceptors.response.use(
             }
         }
 
+        // Captura de 403 Forbidden por revocación o cambio de roles/permisos
+        if (error.response?.status === 403) {
+            const forbiddenMessage =
+                (error.response?.data as any)?.detail ??
+                (error.response?.data as any)?.message ??
+                'Acceso denegado por políticas de permisos o cambio de rol.';
+
+            if (typeof window !== 'undefined') {
+                window.dispatchEvent(
+                    new CustomEvent('auth:forbidden', {
+                        detail: {
+                            status: 403,
+                            message: forbiddenMessage,
+                            url: originalRequest?.url,
+                        },
+                    })
+                );
+            }
+        }
+
         // Normalización del mensaje de error
         const responseData = error.response?.data;
         const message =

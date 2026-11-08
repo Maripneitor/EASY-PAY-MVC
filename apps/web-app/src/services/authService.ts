@@ -69,6 +69,32 @@ class AuthService {
         return stored ? JSON.parse(stored) : null;
     }
 
+    async getCurrentUser(): Promise<User | null> {
+        try {
+            const response = await httpClient.get<User>('/auth/me');
+            if (response.data) {
+                this.updateUserSession(response.data);
+                return response.data;
+            }
+        } catch (error) {
+            console.warn('[AuthService] Error fetching /auth/me:', error);
+        }
+        return null;
+    }
+
+    async refreshProfile(userId: string): Promise<User | null> {
+        try {
+            const response = await httpClient.get<User>(`/auth/profile/${userId}`);
+            if (response.data) {
+                this.updateUserSession(response.data);
+                return response.data;
+            }
+        } catch (error) {
+            console.warn(`[AuthService] Error fetching profile for ${userId}:`, error);
+        }
+        return null;
+    }
+
     isAuthenticated(): boolean {
         return !!localStorage.getItem(STORAGE_KEYS.AUTH_USER);
     }

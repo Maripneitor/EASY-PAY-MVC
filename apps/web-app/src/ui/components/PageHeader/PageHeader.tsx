@@ -37,47 +37,63 @@ export const PageHeader: React.FC<PageHeaderProps> = ({
 
     const handleAvatarClick = onAvatarClick || (() => navigate(ROUTES.PROFILE));
     const handleStatsClick = onStatsClick || (() => navigate(ROUTES.STATS));
+    const hasLeftContent = Boolean(onBack || (onMenuClick && !onBack));
 
     return (
         <header className={styles.header}>
             <div className={styles.headerContainer}>
-                <div className={styles.leftSlot}>
-                    <div className="flex items-center gap-1">
-                        {onMenuClick && (
-                            <button onClick={onMenuClick} className="md:hidden flex items-center justify-center min-w-[44px] min-h-[44px] text-[var(--text-primary)] -ml-2" aria-label="Abrir menú de navegación">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                                    <line x1="3" y1="12" x2="21" y2="12"></line>
-                                    <line x1="3" y1="6" x2="21" y2="6"></line>
-                                    <line x1="3" y1="18" x2="21" y2="18"></line>
-                                </svg>
-                            </button>
-                        )}
-                        
-                        {onBack && (
-                            <button onClick={onBack} className={styles.backBtn} aria-label="Volver a la página anterior">
-                                <ArrowLeft size={18} className={styles.backIcon} aria-hidden="true" />
-                                <span className={styles.backText}>Volver</span>
-                            </button>
-                        )}
+                {hasLeftContent && (
+                    <div className={styles.leftSlot}>
+                        <div className="flex items-center gap-1">
+                            {onMenuClick && !onBack && (
+                                <button 
+                                    onClick={onMenuClick} 
+                                    className="md:hidden flex items-center justify-center w-10 h-10 -ml-1 text-[var(--text-primary)] hover:bg-black/5 dark:hover:bg-white/5 rounded-xl transition-colors shrink-0 active:scale-95" 
+                                    aria-label="Abrir menú de navegación"
+                                >
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                                        <line x1="3" y1="12" x2="21" y2="12"></line>
+                                        <line x1="3" y1="6" x2="21" y2="6"></line>
+                                        <line x1="3" y1="18" x2="21" y2="18"></line>
+                                    </svg>
+                                </button>
+                            )}
+                            
+                            {onBack && (
+                                <button 
+                                    onClick={onBack} 
+                                    className={cn(styles.backBtn, "active:scale-95 transition-transform duration-150 cursor-pointer")} 
+                                    aria-label="Volver a la página anterior"
+                                >
+                                    <ArrowLeft size={18} className={styles.backIcon} aria-hidden="true" />
+                                    <span className={cn(styles.backText, "hidden md:inline-block")}>Volver</span>
+                                </button>
+                            )}
+                        </div>
                     </div>
-                </div>
+                )}
 
                 <div className={cn(styles.titleContainer, "flex-1 min-w-0")}>
-                    {subtitle && <span className={cn(styles.subtitle, "hidden md:block truncate")}>{subtitle}</span>}
-                    <h1 className={cn(styles.title, "truncate")}>{title}</h1>
+                    {subtitle && (
+                        <span className="hidden md:inline-block text-[10px] font-bold tracking-widest text-[var(--text-secondary)] uppercase mb-0.5 truncate">
+                            {subtitle}
+                        </span>
+                    )}
+                    <h1 className="text-xl sm:text-2xl md:text-3xl font-black text-[var(--text-primary)] tracking-tight truncate leading-tight">
+                        {title}
+                    </h1>
                 </div>
 
                 <div className={styles.rightActions}>
-                    {/* Se eliminó el ThemeSwitch de aquí para centralizarlo en Ajustes */}
                     {rightSlot}
                     {showStats && (
-                        <button className={styles.notifBtn} onClick={handleStatsClick} aria-label="Ver historial">
+                        <button className={cn(styles.notifBtn, "active:scale-95 transition-transform duration-150 cursor-pointer")} onClick={handleStatsClick} aria-label="Ver historial">
                             <BarChart3 size={20} aria-hidden="true" />
                         </button>
                     )}
                     {showAvatar && (
                         <div className={styles.avatarGroup} onClick={handleAvatarClick} style={{ cursor: 'pointer' }}>
-                            <span className={styles.userNameLabel}>{userName}</span>
+                            <span className={cn(styles.userNameLabel, "hidden md:inline-block truncate max-w-[120px]")}>{userName}</span>
                             <div className={styles.avatarWrapper}>
                                 <img src={USER_AVATAR_URL} alt={userName} className={styles.avatar} />
                             </div>

@@ -34,6 +34,7 @@ export interface AuthContextType {
     loginAsGuest: (name: string, groupCode?: string) => Promise<void>;
     logout: () => Promise<void>;
     updateUserSession: (updatedUser: User, newToken?: string) => void;
+    refreshUserPermissions: () => Promise<void>;
 }
 
 // ─── Context ──────────────────────────────────────────────────────────────────
@@ -166,6 +167,71 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         setUser(authService.getStoredUser());
     }, []);
 
+    const refreshUserPermissions = useCallback(async (): Promise<void> => {
+        const storedUser = authService.getStoredUser();
+        const storedToken = localStorage.getItem(STORAGE_KEYS.AUTH_TOKEN);
+        if (!storedToken || !storedUser?.id) return;
+
+        try {
+            // Consultar datos y permisos en tiempo real desde el backend
+            const updatedUser = (await authService.getCurrentUser()) || (await authService.refreshProfile(storedUser.id));
+            if (updatedUser) {
+                setUser(authService.getStoredUser());
+            }
+        } catch (error: any) {
+            console.warn('[AuthContext] Error refrescando permisos:', error);
+            if (error?.response?.status === 401 || error?.response?.status === 403) {
+                toast.error('Tu sesión ha expirado o tus permisos fueron revocados.');
+                await logout();
+            }
+        }
+    }, [logout]);
+
+    // ── Escuchar eventos 403 Forbidden por revocación o cambio de rol ─────────
+    useEffect(() => {
+        const handleForbidden = async (e: Event) => {
+            const customEvent = e as CustomEvent<{ message?: string; url?: string }>;
+            const detailMsg = customEvent.detail?.message || 'Acceso denegado';
+
+            console.warn('[AuthContext] 403 Forbidden detectado:', detailMsg);
+
+            const storedUser = authService.getStoredUser();
+            if (!storedUser?.id) {
+                await logout();
+                return;
+            }
+
+            try {
+                // Verificar estado real del usuario en el backend
+                const updatedUser = (await authService.getCurrentUser()) || (await authService.refreshProfile(storedUser.id));
+                if (updatedUser) {
+                    const freshUser = authService.getStoredUser();
+                    setUser(freshUser);
+
+                    // Verificar si ya no es Administrador y notificar al usuario
+                    const wasAdmin = (storedUser.roles || []).some((r: string) => r.toLowerCase() === 'administrador' || r.toLowerCase() === 'admin');
+                    const isNowAdmin = (freshUser?.roles || []).some((r: string) => r.toLowerCase() === 'administrador' || r.toLowerCase() === 'admin');
+
+                    if (wasAdmin && !isNowAdmin) {
+                        toast.error('Tus privilegios de Administrador han sido revocados.', {
+                            description: 'Tu perfil fue actualizado en tiempo real a Usuario Regular.',
+                        });
+                    } else {
+                        toast.error(detailMsg);
+                    }
+                } else {
+                    toast.error('Sesión no autorizada. Redirigiendo...');
+                    await logout();
+                }
+            } catch {
+                await logout();
+            }
+        };
+
+        window.addEventListener('auth:forbidden', handleForbidden);
+        return () => window.removeEventListener('auth:forbidden', handleForbidden);
+    }, [logout]);
+
     // ── Context value ──────────────────────────────────────────────────────────
 
     const value: AuthContextType = {
@@ -181,6 +247,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         loginAsGuest,
         logout,
         updateUserSession,
+        refreshUserPermissions,
     };
 
     return (

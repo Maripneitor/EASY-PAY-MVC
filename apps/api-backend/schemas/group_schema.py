@@ -9,6 +9,7 @@ class Group(BaseModel):
     descripcion: Optional[str] = None
     admin_id: str
     integrantes: List[str] = []
+    moneda: Optional[str] = "MXN"
     codigo_invitacion: str = Field(default_factory=lambda: str(uuid.uuid4())[:8].upper())
     fecha_creacion: datetime = Field(default_factory=datetime.utcnow)
     status: str = "active"  # active, settling, liquidated
@@ -19,6 +20,7 @@ class GroupCreate(BaseModel):
     descripcion: Optional[str] = None
     admin_id: str
     items: Optional[List[dict]] = None
+    moneda: Optional[str] = "MXN"
 
 class GroupJoin(BaseModel):
     codigo: str

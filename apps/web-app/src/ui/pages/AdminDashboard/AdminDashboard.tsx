@@ -7,7 +7,7 @@ import { adminService, type AdminUser, type AdminRole, type AuditLogItem, type S
 import { useAuthContext } from '@ui/context/AuthContext';
 
 export const AdminDashboard: React.FC = () => {
-    const { user } = useAuthContext();
+    const { user, refreshUserPermissions } = useAuthContext();
     const [activeTab, setActiveTab] = useState<'users' | 'roles' | 'audit'>('users');
     
     // States
@@ -119,6 +119,12 @@ export const AdminDashboard: React.FC = () => {
         try {
             await adminService.assignUserRoles(userId, [newRole]);
             setMessage({ type: 'success', text: 'Rol asignado correctamente.' });
+
+            // Si el administrador actual modificó su propio rol, refrescar permisos inmediatamente
+            if (user?.id === userId) {
+                await refreshUserPermissions();
+            }
+
             const updatedUsers = await adminService.getUsers();
             setUsers(updatedUsers);
         } catch (error: any) {

@@ -2,9 +2,10 @@ from fastapi_mail import FastMail, MessageSchema, ConnectionConfig, MessageType
 from fastapi import BackgroundTasks
 from dotenv import load_dotenv
 import os
+import re
 import asyncio
 import logging
-from typing import Optional
+from typing import Optional, Tuple
 
 # Importar excepciones específicas de aiosmtplib si están disponibles
 try:
@@ -34,6 +35,8 @@ def _clean_env(val: Optional[str]) -> str:
         return ""
     cleaned = val.split("#")[0].strip()
     return cleaned.strip("\"'")
+
+EMAIL_REGEX = re.compile(r"^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$")
 
 class EmailService:
     """
@@ -91,51 +94,56 @@ class EmailService:
         masked_name = name[:2] + "***" if len(name) > 2 else "***"
         return f"{masked_name}@{domain}"
 
-    async def _dispatch_email(self, message: MessageSchema, email_to: str) -> bool:
+    async def _dispatch_email(self, message: MessageSchema, email_to: str) -> Tuple[bool, Optional[str]]:
         """Ejecuta el envío directo de correo con timeout estricto y captura granular"""
         if not self._has_credentials or not self.config:
+            err_msg = f"Credenciales SMTP no configuradas. Servidor: {self._server}:{self._port}"
             logger.warning(
-                f"[SMTP Fallback] Credenciales SMTP no configuradas. Servidor: {self._server}:{self._port}. "
-                f"Destinatario: {email_to}"
+                f"[SMTP Fallback] {err_msg}. Destinatario: {email_to}"
             )
-            return False
+            return False, err_msg
 
         fm = FastMail(self.config)
         try:
+            logger.info(f"📤 [SMTP Conectando] Intentando despacho de correo a {email_to} vía {self._server}:{self._port}...")
             # Limitar la espera a 10 segundos para no congelar la petición HTTP
             await asyncio.wait_for(fm.send_message(message), timeout=10.0)
-            logger.info(f"[SMTP Exito] Correo enviado exitosamente a {email_to} via {self._server}:{self._port}")
-            return True
+            logger.info(f"✅ [SMTP Éxito] Correo enviado exitosamente a {email_to} via {self._server}:{self._port}")
+            return True, None
         except asyncio.TimeoutError:
+            err_msg = f"Tiempo de espera agotado (10s) al conectar con {self._server}:{self._port}"
             logger.error(
-                f"[SMTP Timeout] Tiempo de espera agotado (10s) al conectar con {self._server}:{self._port} "
-                f"para enviar correo a {email_to}."
+                f"❌ [SMTP Timeout] {err_msg} para enviar correo a {email_to}."
             )
-            return False
+            return False, err_msg
         except SMTPAuthenticationError as e:
+            err_msg = f"Fallo de autenticación con usuario {self._get_masked_user()} en {self._server}:{self._port}"
             logger.error(
-                f"[SMTP Auth Error] Fallo de autenticacion con usuario {self._get_masked_user()} en {self._server}:{self._port}. "
-                f"Verifique que la contrasena de aplicacion sea valida. Detalle: {e}"
+                f"❌ [SMTP Auth Error] {err_msg}. Verifique que la contraseña de aplicación sea válida. Detalle: {e}"
             )
-            return False
+            return False, err_msg
         except SMTPConnectError as e:
+            err_msg = f"No se pudo conectar al servidor SMTP {self._server}:{self._port}"
             logger.error(
-                f"[SMTP Connect Error] No se pudo conectar al servidor SMTP {self._server}:{self._port}. "
-                f"Verifique conexion de red o bloqueo de puertos. Detalle: {e}"
+                f"❌ [SMTP Connect Error] {err_msg}. Verifique conexión de red o bloqueo de puertos. Detalle: {e}"
             )
-            return False
+            return False, err_msg
         except SMTPRecipientsRefused as e:
-            logger.error(f"[SMTP Recipient Error] Destinatario rechazado por el servidor ({email_to}): {e}")
-            return False
+            err_msg = f"Destinatario rechazado por el servidor ({email_to})"
+            logger.error(f"❌ [SMTP Recipient Error] {err_msg}: {e}")
+            return False, err_msg
         except SMTPException as e:
-            logger.error(f"[SMTP Error] Error en protocolo SMTP hacia {email_to}: {e}")
-            return False
+            err_msg = f"Error en protocolo SMTP hacia {email_to}: {e}"
+            logger.error(f"❌ [SMTP Error] {err_msg}")
+            return False, err_msg
         except (ConnectionError, OSError) as e:
-            logger.error(f"[SMTP Network Error] Error de red o socket hacia {self._server}:{self._port}: {e}")
-            return False
+            err_msg = f"Error de red o socket hacia {self._server}:{self._port}: {e}"
+            logger.error(f"❌ [SMTP Network Error] {err_msg}")
+            return False, err_msg
         except Exception as e:
-            logger.error(f"[SMTP Unexpected Error] Excepcion no controlada enviando correo a {email_to}: {e}")
-            return False
+            err_msg = f"Excepción no controlada enviando correo a {email_to}: {e}"
+            logger.error(f"❌ [SMTP Unexpected Error] {err_msg}")
+            return False, err_msg
 
     async def send_otp(
         self,
@@ -149,8 +157,8 @@ class EmailService:
         Soporta envío síncrono no bloqueante o despacho mediante BackgroundTasks.
         """
         email_clean = email_to.strip().lower() if email_to else ""
-        if not email_clean:
-            logger.warning("[SMTP Warning] Intento de envio con direccion de correo vacia.")
+        if not email_clean or not EMAIL_REGEX.match(email_clean):
+            logger.warning(f"[SMTP Warning] Intento de envio con direccion de correo no valida: '{email_to}'")
             return False
 
         subject = "Recuperacion de Contrasena - Easy-Pay" if is_recovery else "Codigo de Seguridad - Easy-Pay"
@@ -186,5 +194,84 @@ class EmailService:
             logger.info(f"[SMTP Background] Envio de OTP para {email_clean} encolado en BackgroundTasks.")
             return True
 
+        success, _ = await self._dispatch_email(message, email_clean)
+        return success
+
+    async def send_group_invitation(
+        self,
+        email_to: str,
+        group_name: str,
+        invited_by_name: str,
+        group_code: str,
+        invite_url: Optional[str] = None,
+        background_tasks: Optional[BackgroundTasks] = None
+    ) -> Tuple[bool, Optional[str]]:
+        """
+        Envía un correo invitando al usuario a unirse a un grupo en Easy-Pay.
+        Incluye enlace directo de aceptación y código de grupo alternativo.
+        Devuelve tupla (éxito: bool, error_detalle: Optional[str]).
+        """
+        email_clean = email_to.strip().lower() if email_to else ""
+        if not email_clean or not EMAIL_REGEX.match(email_clean):
+            err_msg = f"Dirección de correo inválida o malformada: '{email_to}'"
+            logger.warning(f"[SMTP Warning] {err_msg}")
+            return False, err_msg
+
+        subject = f"Te han invitado a unirte a '{group_name}' en Easy-Pay"
+        frontend_base = _clean_env(os.getenv("FRONTEND_URL", "http://localhost:5173")).rstrip("/")
+        frontend_url = invite_url or f"{frontend_base}/join?code={group_code}"
+
+        html_body = f"""
+            <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; padding: 32px 24px; border: 1px solid #e2e8f0; border-radius: 16px; max-width: 520px; margin: 0 auto; background-color: #ffffff; color: #1e293b;">
+                <div style="text-align: center; margin-bottom: 24px;">
+                    <span style="display: inline-block; padding: 6px 12px; background: #eef2ff; color: #4f46e5; border-radius: 9999px; font-size: 11px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase;">
+                        Easy-Pay &bull; Gastos Compartidos
+                    </span>
+                </div>
+                
+                <h1 style="color: #0f172a; font-size: 22px; font-weight: 800; text-align: center; margin: 0 0 12px; line-height: 1.3;">
+                    ¡Hola! Te invitaron a un grupo
+                </h1>
+                
+                <p style="color: #475569; font-size: 15px; line-height: 1.6; text-align: center; margin: 0 0 24px;">
+                    <strong style="color: #0f172a;">{invited_by_name}</strong> te ha invitado a formar parte del grupo de gastos <strong style="color: #4f46e5;">{group_name}</strong>.
+                </p>
+
+                <div style="text-align: center; margin: 28px 0;">
+                    <a href="{frontend_url}" style="display: inline-block; background: #4f46e5; color: #ffffff; font-weight: 600; font-size: 15px; padding: 12px 28px; border-radius: 10px; text-decoration: none; box-shadow: 0 4px 6px -1px rgba(79, 70, 229, 0.2);">
+                        Aceptar Invitación y Unirse
+                    </a>
+                </div>
+
+                <div style="background-color: #f8fafc; border: 1px dashed #cbd5e1; border-radius: 12px; padding: 16px; margin: 24px 0; text-align: center;">
+                    <p style="color: #64748b; font-size: 12px; margin: 0 0 6px; text-transform: uppercase; font-weight: 600; letter-spacing: 0.05em;">
+                        O únete manualmente con este código:
+                    </p>
+                    <span style="font-family: monospace; font-size: 24px; font-weight: 800; letter-spacing: 4px; color: #0f172a;">
+                        {group_code}
+                    </span>
+                </div>
+
+                <p style="color: #94a3b8; font-size: 12px; line-height: 1.5; text-align: center; margin: 24px 0 0;">
+                    Si no reconoces a quien te invitó o crees que esto es un error, puedes ignorar este correo con tranquilidad.
+                </p>
+                <hr style="border: none; border-top: 1px solid #f1f5f9; margin: 24px 0;" />
+                <p style="color: #94a3b8; font-size: 11px; text-align: center; margin: 0;">Easy-Pay Platform &bull; División de Pagos Seguros</p>
+            </div>
+        """
+
+        message = MessageSchema(
+            subject=subject,
+            recipients=[email_clean],
+            body=html_body,
+            subtype=MessageType.html
+        )
+
+        if background_tasks:
+            background_tasks.add_task(self._dispatch_email, message, email_clean)
+            logger.info(f"[SMTP Background] Invitación para {email_clean} al grupo '{group_name}' encolada.")
+            return True, None
+
         return await self._dispatch_email(message, email_clean)
+
 

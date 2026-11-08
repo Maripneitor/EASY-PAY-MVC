@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { Plus, Search, Users, Filter, LayoutGrid, List as ListIcon, Trash2, X, Pencil } from 'lucide-react';
 import { PageHeader } from '@ui/components/PageHeader';
-import { useOutletContext } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@infrastructure/utils';
 import { useGroups } from './useGroups';
@@ -17,7 +16,6 @@ import { TwoFactorModal } from '../../components/Security/TwoFactorModal';
 
 export const GroupsPage: React.FC = () => {
     useDocumentTitle('Mis Grupos');
-    const { toggleSidebar } = useOutletContext<{ toggleSidebar: () => void }>();
     const { user } = useAuthContext();
     const { 
         groups, 
@@ -39,6 +37,8 @@ export const GroupsPage: React.FC = () => {
     const [searchTerm, setSearchTerm] = useState('');
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
     const [editingGroup, setEditingGroup] = useState<any>(null);
+    const [groupToDeleteConfirm, setGroupToDeleteConfirm] = useState<{ id: string; name: string } | null>(null);
+    const [isDeleting, setIsDeleting] = useState(false);
     const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
     const [activeTab, setActiveTab] = useState<'activos' | 'borrados'>('activos');
 
@@ -69,10 +69,10 @@ export const GroupsPage: React.FC = () => {
         };
     };
 
-    const handleDelete = async (e: React.MouseEvent, groupId: string, groupName: string) => {
+    const handleDelete = (e: React.MouseEvent, groupId: string, groupName: string) => {
         e.stopPropagation();
         e.preventDefault();
-        await deleteGroup(groupId);
+        setGroupToDeleteConfirm({ id: groupId, name: groupName });
     };
 
     const handleEdit = (e: React.MouseEvent, group: any) => {
@@ -85,14 +85,13 @@ export const GroupsPage: React.FC = () => {
     const isAdminUser = userRoles.includes('administrador') || userRoles.includes('admin');
     const isEditorUser = userRoles.includes('editor');
     const userPermissions = user?.permissions || [];
-    const canWriteGroups = isAdminUser || isEditorUser || userPermissions.includes('groups:write');
+    const canWriteGroups = isAdminUser || isEditorUser || userRoles.includes('usuario regular') || userRoles.includes('usuario') || userPermissions.includes('groups:write');
 
     return (
         <div className="min-h-screen bg-[var(--bg-body)] pb-20 font-display">
             <PageHeader
                 title="MIS GRUPOS"
                 subtitle="Gestiona tus cuentas compartidas"
-                onMenuClick={toggleSidebar}
             />
 
             <main className="max-w-[1600px] mx-auto px-4 py-8 md:px-8 space-y-8">
@@ -223,8 +222,8 @@ export const GroupsPage: React.FC = () => {
                     <motion.div 
                         layout
                         className={viewMode === 'grid' 
-                            ? "grid gap-8 grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4" 
-                            : "space-y-6"
+                            ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" 
+                            : "grid grid-cols-1 gap-4 max-w-4xl mx-auto"
                         }
                     >
                         <AnimatePresence mode="popLayout">
@@ -247,6 +246,7 @@ export const GroupsPage: React.FC = () => {
                                         animate={{ opacity: 1, scale: 1 }}
                                         exit={{ opacity: 0, scale: 0.9 }}
                                         layout
+                                        className="w-full min-w-0"
                                     >
                                         <GroupCard
                                             group={mappedGroup}
@@ -317,6 +317,69 @@ export const GroupsPage: React.FC = () => {
                 onClose={() => setEditingGroup(null)}
                 group={editingGroup}
             />
+
+            {/* Modal de Confirmación Limpio de Eliminación */}
+            <AnimatePresence>
+                {groupToDeleteConfirm && (
+                    <div className="fixed inset-0 z-[110] flex items-center justify-center p-4">
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            onClick={() => !isDeleting && setGroupToDeleteConfirm(null)}
+                            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+                        />
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.95, y: 16 }}
+                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                            exit={{ opacity: 0, scale: 0.95, y: 16 }}
+                            transition={{ duration: 0.18, ease: "easeOut" }}
+                            className="relative w-full max-w-md bg-[#0f172a] rounded-3xl border border-rose-500/30 p-6 sm:p-8 shadow-2xl text-center space-y-6 overflow-hidden"
+                        >
+                            <div className="w-14 h-14 rounded-2xl bg-rose-500/10 text-rose-500 border border-rose-500/20 flex items-center justify-center mx-auto shadow-sm">
+                                <Trash2 size={26} />
+                            </div>
+
+                            <div className="space-y-2">
+                                <h3 className="text-xl font-black text-white uppercase tracking-tight">
+                                    ¿Eliminar este grupo?
+                                </h3>
+                                <p className="text-xs text-slate-400 font-medium leading-relaxed">
+                                    Estás a punto de eliminar <span className="text-white font-bold">"{groupToDeleteConfirm.name}"</span>. Esta acción es irreversible y eliminará todos los gastos y balances asociados.
+                                </p>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-3 pt-2">
+                                <button
+                                    type="button"
+                                    disabled={isDeleting}
+                                    onClick={() => setGroupToDeleteConfirm(null)}
+                                    className="py-3 px-4 bg-slate-800 hover:bg-slate-700 active:scale-95 text-slate-200 rounded-2xl text-xs font-black uppercase tracking-wider transition-all duration-150 border border-slate-700 disabled:opacity-50"
+                                >
+                                    Cancelar
+                                </button>
+                                <button
+                                    type="button"
+                                    disabled={isDeleting}
+                                    onClick={async () => {
+                                        setIsDeleting(true);
+                                        try {
+                                            const id = groupToDeleteConfirm.id;
+                                            setGroupToDeleteConfirm(null);
+                                            await deleteGroup(id);
+                                        } finally {
+                                            setIsDeleting(false);
+                                        }
+                                    }}
+                                    className="py-3 px-4 bg-rose-600 hover:bg-rose-500 active:scale-95 text-white rounded-2xl text-xs font-black uppercase tracking-wider shadow-lg shadow-rose-600/30 hover:scale-[1.02] transition-all duration-150 disabled:opacity-50"
+                                >
+                                    Confirmar
+                                </button>
+                            </div>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
 
             <TwoFactorModal
                 isOpen={is2FAModalOpen}

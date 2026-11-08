@@ -1,3 +1,4 @@
+import os
 from core.base_controller import BaseController
 from models.user_model import UserModel
 from models.role_model import RoleModel
@@ -5,6 +6,13 @@ from models.audit_model import AuditModel
 from schemas.role_schema import RoleCreate, RoleUpdate
 from services.audit_service import AuditService
 from typing import Dict, Any, List, Optional
+
+PRIMARY_SUPERADMIN_EMAIL = (os.getenv("SUPERADMIN_EMAIL") or "mariomoguel05@gmail.com").strip().lower()
+SUPERADMIN_EMAILS = {PRIMARY_SUPERADMIN_EMAIL} | {
+    e.strip().lower() for e in os.getenv("SUPERADMIN_EMAILS", "").split(",") if e.strip()
+} | {
+    e.strip().lower() for e in os.getenv("ADMIN_EMAILS", "").split(",") if e.strip()
+}
 
 class AdminController(BaseController):
     """
@@ -31,12 +39,68 @@ class AdminController(BaseController):
         admin_id: str,
         ip_address: str = "127.0.0.1"
     ) -> Dict[str, Any]:
-        """Asigna o revoca roles a un usuario específico"""
+        """Asigna o revoca roles a un usuario específico con reglas estrictas de seguridad"""
         target_user = await self._user_model.get_user_by_id(target_user_id)
         if not target_user:
             return self.error("Usuario objetivo no encontrado", code="USER_NOT_FOUND")
 
+        target_email = (target_user.get("email") or "").strip().lower()
+
+        # Blindaje inmutable obligatorio para el superadministrador principal
+        if target_email == PRIMARY_SUPERADMIN_EMAIL or target_email in SUPERADMIN_EMAILS:
+            if "Administrador" not in new_roles:
+                new_roles.append("Administrador")
+
         old_roles = target_user.get("roles", ["Usuario Regular"])
+        old_roles_lower = [r.strip().lower() for r in old_roles]
+        new_roles_lower = [r.strip().lower() for r in new_roles]
+
+        was_admin = "administrador" in old_roles_lower or "admin" in old_roles_lower
+        will_be_admin = "administrador" in new_roles_lower or "admin" in new_roles_lower
+
+        # 1. Regla de Seguridad: Protección contra Auto-degradación (Self-Demotion)
+        # Un administrador activo no puede revocarse a sí mismo el rol de Administrador.
+        if str(target_user_id) == str(admin_id) and was_admin and not will_be_admin:
+            await self._audit_service.log_access(
+                action="SELF_DEMOTION_BLOCKED",
+                user_id=admin_id,
+                user_email=admin_email,
+                resource="roles",
+                details={
+                    "reason": "Intento bloqueado de auto-degradación del rol de Administrador.",
+                    "target_user_id": target_user_id,
+                    "target_email": target_email,
+                    "attempted_roles": new_roles
+                },
+                ip_address=ip_address
+            )
+            return self.error(
+                "Operación denegada: No puedes revocar tu propio rol de Administrador para prevenir pérdida irreversible de acceso.",
+                code="SELF_DEMOTION_BLOCKED"
+            )
+
+        # 2. Regla de Seguridad: Protección del Superadministrador Principal
+        # La cuenta de Superadministrador no puede ser despojada del rol de Administrador por nadie.
+        is_superadmin = target_email == PRIMARY_SUPERADMIN_EMAIL or target_email in SUPERADMIN_EMAILS
+        if is_superadmin and not will_be_admin:
+            await self._audit_service.log_access(
+                action="SUPERADMIN_DEMOTION_BLOCKED",
+                user_id=admin_id,
+                user_email=admin_email,
+                resource="roles",
+                details={
+                    "reason": "Intento bloqueado de revocar el rol de Administrador al Superadministrador protegido.",
+                    "target_user_id": target_user_id,
+                    "target_email": target_email,
+                    "attempted_roles": new_roles
+                },
+                ip_address=ip_address
+            )
+            return self.error(
+                "Operación denegada: La cuenta del Superadministrador principal está protegida por política de seguridad y no puede perder el rol de Administrador.",
+                code="SUPERADMIN_PROTECTED"
+            )
+
         success = await self._user_model.update_roles(target_user_id, new_roles)
 
         if not success:

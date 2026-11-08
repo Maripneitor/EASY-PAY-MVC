@@ -12,7 +12,7 @@ DEFAULT_ROLES = [
             "wallets:read", "wallets:write", "wallets:delete",
             "users:read", "users:write", "users:delete",
             "roles:read", "roles:write", "roles:delete",
-            "audit:read"
+            "audit:read", "stats:read"
         ],
         "is_system": True
     },
@@ -23,17 +23,30 @@ DEFAULT_ROLES = [
             "groups:read", "groups:write", "groups:delete",
             "expenses:read", "expenses:write", "expenses:delete",
             "wallets:read", "wallets:write", "wallets:delete",
-            "audit:read"
+            "audit:read", "stats:read"
+        ],
+        "is_system": True
+    },
+    {
+        "name": "Auditor",
+        "description": "Rol enfocado en la supervisión de auditorías, reportes y métricas financieras.",
+        "permissions": [
+            "groups:read",
+            "expenses:read",
+            "wallets:read",
+            "audit:read",
+            "stats:read"
         ],
         "is_system": True
     },
     {
         "name": "Usuario Regular",
-        "description": "Solo puede ver y consumir contenido.",
+        "description": "Usuario estándar que puede crear grupos, registrar gastos y gestionar su billetera.",
         "permissions": [
-            "groups:read",
-            "expenses:read",
-            "wallets:read"
+            "groups:read", "groups:write",
+            "expenses:read", "expenses:write",
+            "wallets:read", "wallets:write",
+            "stats:read"
         ],
         "is_system": True
     }
@@ -56,7 +69,7 @@ class RoleModel(BaseRepository):
                 print(f"⚠️ [RoleModel] Índice de name ya existe: {e}")
 
     async def seed_default_roles(self):
-        """Inicializa los 3 roles predeterminados si aún no existen"""
+        """Inicializa los roles predeterminados si aún no existen o actualiza sus permisos"""
         await self._ensure_indexes()
         for default_role in DEFAULT_ROLES:
             existing = await self.collection.find_one({"name": default_role["name"]})
@@ -67,6 +80,15 @@ class RoleModel(BaseRepository):
                 }
                 await self.collection.insert_one(doc)
                 print(f"✅ [RoleModel] Rol predeterminado creado: {default_role['name']}")
+            else:
+                await self.collection.update_one(
+                    {"name": default_role["name"]},
+                    {"$set": {
+                        "description": default_role["description"],
+                        "permissions": default_role["permissions"],
+                        "is_system": True
+                    }}
+                )
 
     async def get_all_roles(self) -> List[Dict[str, Any]]:
         """Devuelve todos los roles configurados en el sistema"""

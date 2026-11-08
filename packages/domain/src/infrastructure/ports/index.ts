@@ -30,6 +30,12 @@ export interface GroupRepository {
     // ─── Payment Operations ───────────────────────────────────────────────────
     markMemberAsPaid(groupId: string, memberId: string): Promise<void>;
 
+    // ─── Invitation Operations ─────────────────────────────────────────────────
+    inviteMember?(groupId: string, email: string): Promise<any>;
+    getGroupInvitations?(groupId: string): Promise<any[]>;
+    acceptInvitation?(invitationId: string): Promise<any>;
+    rejectInvitation?(invitationId: string): Promise<any>;
+
     // ─── Real-time Subscription ───────────────────────────────────────────────
     /**
      * Subscribe to live updates for a group.

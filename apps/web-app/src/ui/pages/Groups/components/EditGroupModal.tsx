@@ -12,24 +12,34 @@ interface ModalProps {
 }
 
 export const EditGroupModal: React.FC<ModalProps> = ({ isOpen, onClose, group, onSuccess }) => {
-    const { updateGroup } = useGroups();
+    const { groups, updateGroup } = useGroups();
     const [name, setName] = useState('');
     const [desc, setDesc] = useState('');
     const [loading, setLoading] = useState(false);
 
-    useEffect(() => {
-        if (isOpen && group) {
-            setName(group.nombre || '');
-            setDesc(group.descripcion || '');
+    // Resolver el objeto de grupo en caso de recibir únicamente el ID como string
+    const resolvedGroup = React.useMemo(() => {
+        if (!group) return null;
+        if (typeof group === 'string') {
+            return groups.find(g => g.id === group || (g as any)._id === group) || { id: group };
         }
-    }, [isOpen, group?.id]); // Solo sincronizar cuando se abre el modal
+        return group;
+    }, [group, groups]);
+
+    useEffect(() => {
+        if (isOpen && resolvedGroup) {
+            setName(resolvedGroup.nombre || resolvedGroup.name || '');
+            setDesc(resolvedGroup.descripcion || resolvedGroup.description || '');
+        }
+    }, [isOpen, resolvedGroup?.id, resolvedGroup?._id]); // Solo sincronizar cuando se abre el modal
 
     const handleUpdate = async () => {
-        if (!name) return;
+        const targetId = resolvedGroup?.id || resolvedGroup?._id || (typeof group === 'string' ? group : null);
+        if (!name.trim() || !targetId) return;
         const toastId = toast.loading("Guardando cambios...");
         setLoading(true);
         try {
-            await updateGroup(group.id, name, desc);
+            await updateGroup(targetId, name.trim(), desc.trim());
             toast.success("Grupo actualizado con éxito", { id: toastId });
             if (onSuccess) onSuccess();
             onClose();

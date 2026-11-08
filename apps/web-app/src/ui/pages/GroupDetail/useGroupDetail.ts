@@ -89,13 +89,15 @@ export const useGroupDetail = (groupId: string) => {
                 selectedBankAccounts: gData.selected_bank_accounts || [],
                 members,
                 membersData,
+                pendingInvitations: gData.pending_invitations || [],
                 activities: itemsList,
                 balances: detailedBalances,
                 totalSpent: bData.total_gastado_en_grupo || bData.total_gastado || 0
             };
         },
         enabled: !!groupId && groupId !== ':groupId',
-        staleTime: 30000 // Aumentar staleTime ya que usaremos WS para invalidar
+        staleTime: 10000,
+        refetchInterval: 12000 // Refresco automático en segundo plano para sincronización perfecta
     });
 
     // --- WebSocket Logic ---
@@ -107,8 +109,8 @@ export const useGroupDetail = (groupId: string) => {
 
         const connect = () => {
             const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-            const host = window.location.hostname === 'localhost' ? 'localhost:8001' : window.location.host;
-            const wsUrl = `${protocol}//${host}/api/groups/ws/groups/${groupId}?token=${token}`;
+            // Usar window.location.host para aprovechar el proxy de Vite con soporte ws: true
+            const wsUrl = `${protocol}//${window.location.host}/api/groups/ws/${groupId}`;
             
             console.log(`[WS] Conectando a ${wsUrl}`);
             socket = new WebSocket(wsUrl);
@@ -118,11 +120,17 @@ export const useGroupDetail = (groupId: string) => {
                     const msg = JSON.parse(event.data);
                     console.log("[WS] Mensaje recibido:", msg);
                     
-                    // Invalidar queries para refrescar datos
+                    // Invalidar queries para refrescar instantáneamente miembros, balances y actividades
                     queryClient.invalidateQueries({ queryKey: ['group', groupId] });
                     queryClient.invalidateQueries({ queryKey: ['pending-settlements', groupId] });
                     
-                    if (msg.type === 'payment_reported') {
+                    if (msg.type === 'USER_JOINED') {
+                        toast.info("¡Un nuevo integrante se ha unido al grupo!");
+                    } else if (msg.type === 'INVITATION_SENT') {
+                        toast.info(`Se envió una invitación a ${msg.email}`);
+                    } else if (msg.type === 'INVITATION_CANCELLED') {
+                        toast.info("Una invitación pendiente fue revocada");
+                    } else if (msg.type === 'payment_reported') {
                         toast.info("Un miembro ha reportado un pago");
                     } else if (msg.type === 'settlement_updated') {
                         toast.success("El estado de una liquidación ha cambiado");
@@ -264,6 +272,38 @@ export const useGroupDetail = (groupId: string) => {
         }
     };
 
+    const inviteMember = async (email: string) => {
+        try {
+            const res = await groupRepository.inviteMember(groupId, email);
+            toast.success("Invitación enviada correctamente por correo y notificación");
+            refetch();
+            return res;
+        } catch (error: any) {
+            toast.error(error.message || "Error al enviar la invitación");
+            throw error;
+        }
+    };
+
+    const cancelInvitation = async (invitationId: string) => {
+        try {
+            await groupRepository.cancelInvitation(invitationId);
+            toast.success("Invitación cancelada");
+            refetch();
+        } catch (error: any) {
+            toast.error(error.message || "Error al cancelar la invitación");
+        }
+    };
+
+    const resendInvitation = async (invitationId: string) => {
+        try {
+            await groupRepository.resendInvitation(invitationId);
+            toast.success("Invitación reenviada correctamente por correo");
+            refetch();
+        } catch (error: any) {
+            toast.error(error.message || "Error al reenviar la invitación");
+        }
+    };
+
     return {
         activeTab, setActiveTab,
         groupName: data?.groupName || '',
@@ -271,6 +311,10 @@ export const useGroupDetail = (groupId: string) => {
         groupCode: data?.groupCode || '',
         members: data?.members || [],
         membersData: data?.membersData || [],
+        pendingInvitations: data?.pendingInvitations || [],
+        inviteMember,
+        cancelInvitation,
+        resendInvitation,
         totalSpent: data?.totalSpent || 0,
         userShare: stats.userShare,
         userOwed: stats.userOwed,

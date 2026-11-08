@@ -1,3 +1,4 @@
+import os
 from core.base_repository import BaseRepository
 from bson import ObjectId
 from datetime import datetime, timezone, timedelta
@@ -74,12 +75,40 @@ class UserModel(BaseRepository):
         return users
 
     async def update_user(self, user_id: str, update_data: Dict[str, Any]) -> bool:
-        """Actualiza campos del perfil de usuario"""
+        """Actualiza campos del perfil de usuario asegurando que el superadministrador no pierda Administrador"""
+        if not self.is_valid_id(user_id):
+            return False
+        superadmin_email = (os.getenv("SUPERADMIN_EMAIL") or "mariomoguel05@gmail.com").strip().lower()
+        if "roles" in update_data:
+            user = await self.get_user_by_id(user_id)
+            if user and (user.get("email") or "").strip().lower() == superadmin_email:
+                if "Administrador" not in update_data["roles"]:
+                    update_data["roles"] = list(update_data["roles"]) + ["Administrador"]
         return await self.update_by_id(user_id, update_data)
 
     async def update_roles(self, user_id: str, roles: List[str]) -> bool:
-        """Asigna o actualiza los roles de un usuario"""
-        return await self.update_by_id(user_id, {"roles": roles})
+        """Asigna o actualiza los roles de un usuario e incrementa la versión de roles con blindaje inmutable para superadmin"""
+        if not self.is_valid_id(user_id):
+            return False
+
+        # Blindaje inmutable a nivel de Base de Datos para el Superadministrador
+        superadmin_email = (os.getenv("SUPERADMIN_EMAIL") or "mariomoguel05@gmail.com").strip().lower()
+        user = await self.get_user_by_id(user_id)
+        if user and (user.get("email") or "").strip().lower() == superadmin_email:
+            if "Administrador" not in roles:
+                roles = list(roles) + ["Administrador"]
+
+        result = await self.collection.update_one(
+            {"_id": self.to_object_id(user_id)},
+            {
+                "$set": {
+                    "roles": roles,
+                    "roles_updated_at": datetime.now(timezone.utc)
+                },
+                "$inc": {"role_version": 1}
+            }
+        )
+        return result.modified_count > 0 or result.matched_count > 0
 
     # --- Mitigación de Fuerza Bruta / Bloqueo ---
     async def increment_failed_attempts(self, user_id: str) -> int:
