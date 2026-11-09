@@ -25,6 +25,7 @@ class User(BaseModel):
     phone: Optional[str] = None
     birth_date: Optional[str] = None
     address: Optional[str] = None
+    rfc: Optional[str] = None
     financial_profile: Optional[dict] = None
     fecha_registro: datetime = Field(default_factory=datetime.utcnow)
     is_verified: bool = False
@@ -53,9 +54,16 @@ class UserUpdate(BaseModel):
     phone: Optional[str] = None
     birth_date: Optional[str] = None
     address: Optional[str] = None
+    rfc: Optional[str] = None
     bank_accounts: Optional[List[BankAccount]] = None
     financial_profile: Optional[dict] = None
     verification_code: Optional[str] = None
 
 class PasswordResetRequest(BaseModel):
     email: EmailStr
+
+class PasswordResetConfirm(BaseModel):
+    email: EmailStr
+    code: str
+    new_password: str = Field(..., min_length=8, description="Nueva contraseña (mínimo 8 caracteres)")
+    confirm_password: str

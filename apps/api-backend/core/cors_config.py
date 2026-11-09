@@ -28,3 +28,4 @@ def get_allowed_cors_origins() -> List[str]:
 
     # Eliminar duplicados manteniendo orden
     return list(dict.fromkeys(origins))
+

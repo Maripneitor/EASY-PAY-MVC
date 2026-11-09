@@ -1,8 +1,10 @@
 import os
+import re
 from core.base_repository import BaseRepository
 from bson import ObjectId
 from datetime import datetime, timezone, timedelta
 from typing import Optional, List, Dict, Any
+from services.crypto_service import crypto_service
 
 class UserModel(BaseRepository):
     """
@@ -22,7 +24,7 @@ class UserModel(BaseRepository):
                 print(f"⚠️ [UserModel] Índice de email ya existe o advertencia: {e}")
 
     async def save_user(self, user_dict: Dict[str, Any]) -> str:
-        """Inserta un nuevo usuario y retorna su ID como string"""
+        """Inserta un nuevo usuario con encriptación de campos sensibles y retorna su ID como string"""
         await self._ensure_indexes()
         if "roles" not in user_dict or not user_dict["roles"]:
             user_dict["roles"] = ["Usuario Regular"]
@@ -30,52 +32,63 @@ class UserModel(BaseRepository):
             user_dict["failed_login_attempts"] = 0
         if "locked_until" not in user_dict:
             user_dict["locked_until"] = None
-        result = await self.collection.insert_one(user_dict)
+        
+        # Encriptación de datos sensibles (RFC, direcciones)
+        encrypted_dict = crypto_service.encrypt_user_sensitive_data(user_dict)
+        result = await self.collection.insert_one(encrypted_dict)
         return str(result.inserted_id)
 
     async def find_by_identifier(self, identifier: str) -> Optional[Dict[str, Any]]:
-        """Busca un usuario por email o nombre (case-insensitive para email)"""
+        """Busca un usuario por email o nombre con mitigación contra NoSQL regex injection"""
+        safe_identifier = re.escape(identifier.strip())
         user = await self.collection.find_one({
             "$or": [
-                {"email": {"$regex": f"^{identifier}$", "$options": "i"}},
-                {"nombre": identifier}
+                {"email": {"$regex": f"^{safe_identifier}$", "$options": "i"}},
+                {"nombre": identifier.strip()}
             ]
         })
-        return user
+        return crypto_service.decrypt_user_sensitive_data(user)
 
     async def find_by_email(self, email: str) -> Optional[Dict[str, Any]]:
-        return await self.collection.find_one({"email": {"$regex": f"^{email}$", "$options": "i"}})
+        safe_email = re.escape(email.strip())
+        user = await self.collection.find_one({"email": {"$regex": f"^{safe_email}$", "$options": "i"}})
+        return crypto_service.decrypt_user_sensitive_data(user)
 
     async def get_user_by_id(self, user_id: str) -> Optional[Dict[str, Any]]:
-        return await self.find_by_id(user_id)
+        user = await self.find_by_id(user_id)
+        return crypto_service.decrypt_user_sensitive_data(user)
 
     async def search_users(self, query: str, limit: int = 5) -> List[Dict[str, Any]]:
-        """Búsqueda de autocompletado por nombre o email"""
+        """Búsqueda de autocompletado por nombre o email sanitizada contra inyecciones regex"""
+        safe_query = re.escape(query.strip())
         cursor = self.collection.find({
             "$or": [
-                {"nombre": {"$regex": query, "$options": "i"}},
-                {"email": {"$regex": query, "$options": "i"}}
+                {"nombre": {"$regex": safe_query, "$options": "i"}},
+                {"email": {"$regex": safe_query, "$options": "i"}}
             ]
         }, {"password_hash": 0}).limit(limit)
         users = await cursor.to_list(length=limit)
         for u in users:
             u["id"] = str(u["_id"])
             del u["_id"]
+            u = crypto_service.decrypt_user_sensitive_data(u)
         return users
 
     async def get_all_users(self, limit: int = 200, skip: int = 0) -> List[Dict[str, Any]]:
-        """Obtiene la lista completa de usuarios para el panel de administración"""
+        """Obtiene la lista completa de usuarios para el panel de administración desencriptando datos legibles"""
         cursor = self.collection.find({}, {"password_hash": 0}).sort("fecha_registro", -1).skip(skip).limit(limit)
         users = await cursor.to_list(length=limit)
+        decrypted_users = []
         for u in users:
             u["id"] = str(u["_id"])
             del u["_id"]
             if "roles" not in u:
                 u["roles"] = ["Usuario Regular"]
-        return users
+            decrypted_users.append(crypto_service.decrypt_user_sensitive_data(u))
+        return decrypted_users
 
     async def update_user(self, user_id: str, update_data: Dict[str, Any]) -> bool:
-        """Actualiza campos del perfil de usuario asegurando que el superadministrador no pierda Administrador"""
+        """Actualiza campos del perfil de usuario asegurando que el superadministrador no pierda Administrador y encriptando campos sensibles"""
         if not self.is_valid_id(user_id):
             return False
         superadmin_email = (os.getenv("SUPERADMIN_EMAIL") or "mariomoguel05@gmail.com").strip().lower()
@@ -84,7 +97,10 @@ class UserModel(BaseRepository):
             if user and (user.get("email") or "").strip().lower() == superadmin_email:
                 if "Administrador" not in update_data["roles"]:
                     update_data["roles"] = list(update_data["roles"]) + ["Administrador"]
-        return await self.update_by_id(user_id, update_data)
+        
+        # Encriptar campos sensibles al actualizar
+        encrypted_update = crypto_service.encrypt_user_sensitive_data(update_data)
+        return await self.update_by_id(user_id, encrypted_update)
 
     async def update_roles(self, user_id: str, roles: List[str]) -> bool:
         """Asigna o actualiza los roles de un usuario e incrementa la versión de roles con blindaje inmutable para superadmin"""

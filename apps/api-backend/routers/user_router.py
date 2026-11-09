@@ -3,7 +3,10 @@ from typing import Dict, Any, Optional
 from pydantic import BaseModel
 
 from controllers.user_controller import UserController
-from schemas.user_schema import UserCreate, UserLogin, UserUpdate, PasswordChange, PasswordResetRequest
+from schemas.user_schema import (
+    UserCreate, UserLogin, UserUpdate, PasswordChange, 
+    PasswordResetRequest, PasswordResetConfirm
+)
 from core.permissions import get_current_user_id, get_current_user_claims, get_current_user_with_permissions
 from core.rate_limiter import auth_rate_limiter
 from utils.user_agent_parser import extract_client_ip
@@ -206,6 +209,25 @@ async def request_password_reset(
 ):
     ip, _ = get_client_info(request)
     result = await controller.request_password_reset(data.email, ip_address=ip, background_tasks=background_tasks)
+    return result
+
+@user_router.post("/reset-password", dependencies=[Depends(auth_rate_limiter)])
+async def reset_password_with_code(
+    data: PasswordResetConfirm,
+    request: Request
+):
+    """Restablece la contraseña mediante la validación de código OTP"""
+    ip, ua = get_client_info(request)
+    result = await controller.reset_password_with_code(
+        email=data.email,
+        code=data.code,
+        new_password=data.new_password,
+        confirm_password=data.confirm_password,
+        ip_address=ip,
+        user_agent=ua
+    )
+    if controller.is_error(result):
+        raise HTTPException(status_code=400, detail=result.get("message"))
     return result
 
 @user_router.post("/change-password/{user_id}", dependencies=[Depends(auth_rate_limiter)])

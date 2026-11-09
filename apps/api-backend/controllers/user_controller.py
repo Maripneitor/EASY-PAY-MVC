@@ -14,13 +14,18 @@ from services.email_service import EmailService
 from services.audit_service import AuditService
 from utils.user_agent_parser import parse_user_agent
 
-def sanitize_string(text: str) -> str:
-    """Sanitiza strings para evitar inyecciones XSS y HTML malicioso"""
+def sanitize_string(text: Optional[str]) -> str:
+    """Sanitiza strings para mitigar inyecciones XSS, scripts y caracteres de control"""
     if not text:
         return ""
-    # Eliminar etiquetas script y HTML potencialmente peligrosas
-    clean = re.sub(r'<[^>]*>', '', text)
-    return clean.strip()
+    # Remover caracteres nulos y caracteres de control no imprimibles
+    cleaned = re.sub(r'[\x00-\x08\x0B\x0C\x0E-\x1F]', '', str(text))
+    # Remover etiquetas HTML y scripts
+    cleaned = re.sub(r'<[^>]*>', '', cleaned)
+    # Neutralizar pseudo-protocolos peligrosos
+    cleaned = re.sub(r'javascript:\s*', '', cleaned, flags=re.IGNORECASE)
+    cleaned = re.sub(r'data:\s*text/html', '', cleaned, flags=re.IGNORECASE)
+    return cleaned.strip()
 
 class UserController(BaseController):
     """
@@ -477,8 +482,67 @@ class UserController(BaseController):
             return self.success("Contraseña actualizada con éxito")
         return self.error("No se pudo actualizar la contraseña", code="UPDATE_FAILED")
 
+    async def reset_password_with_code(
+        self,
+        email: str,
+        code: str,
+        new_password: str,
+        confirm_password: str,
+        ip_address: str = "127.0.0.1",
+        user_agent: str = "Unknown"
+    ) -> Dict[str, Any]:
+        """Restablecimiento directo de contraseña mediante código de verificación (OTP)"""
+        if new_password != confirm_password:
+            return self.error("Las contraseñas no coinciden", code="PASSWORD_MISMATCH")
+
+        if len(new_password) < 8:
+            return self.error("La contraseña debe tener al menos 8 caracteres.", code="WEAK_PASSWORD")
+
+        email_clean = email.strip().lower()
+        user = await self._user_model.find_by_identifier(email_clean)
+        if not user:
+            return self.error("No se pudo completar el restablecimiento", code="RESET_FAILED")
+
+        user_id = str(user["_id"])
+        otp_data = await self._user_model.get_otp_data(user_id)
+        if not otp_data or not otp_data.get("otp_code"):
+            return self.error("No hay un código pendiente de verificación", code="NO_PENDING_OTP")
+
+        saved_code = str(otp_data.get("otp_code")).strip()
+        expires_at = otp_data.get("otp_expires")
+
+        if expires_at and expires_at.tzinfo is None:
+            expires_at = expires_at.replace(tzinfo=timezone.utc)
+
+        if expires_at and datetime.now(timezone.utc) > expires_at:
+            return self.error("El código de verificación ha expirado", code="OTP_EXPIRED")
+
+        if saved_code != str(code).strip():
+            return self.error("Código de verificación incorrecto", code="INVALID_OTP")
+
+        new_hash = self._auth_service.hash_password(new_password)
+        await self._user_model.update_user(user_id, {
+            "password_hash": new_hash,
+            "failed_login_attempts": 0,
+            "locked_until": None,
+            "two_factor.otp_code": None,
+            "two_factor.otp_expires": None
+        })
+
+        await self._audit_service.log_access(
+            action="PASSWORD_RESET_SUCCESS",
+            user_id=user_id,
+            user_email=email_clean,
+            resource="auth",
+            details={"method": "OTP_RECOVERY"},
+            ip_address=ip_address,
+            user_agent=user_agent
+        )
+
+        return self.success("Contraseña restablecida correctamente. Ya puedes iniciar sesión.")
+
     async def get_profile(self, user_id: str) -> Optional[Dict[str, Any]]:
-        """Obtiene los datos del perfil de usuario con sus roles y permisos actualizados"""
+        """Obtiene los datos del perfil de usuario con sus roles y permisos actualizados, desencriptando datos sensibles"""
         user = await self._user_model.get_user_by_id(user_id)
         if not user:
             return None
@@ -491,6 +555,7 @@ class UserController(BaseController):
             "phone": user.get("phone"),
             "birth_date": user.get("birth_date"),
             "address": user.get("address"),
+            "rfc": user.get("rfc"),
             "bank_accounts": user.get("bank_accounts", []),
             "roles": roles,
             "permissions": permissions,
@@ -500,13 +565,19 @@ class UserController(BaseController):
         }
 
     async def update_profile(self, user_id: str, update_dict: Dict[str, Any]) -> Dict[str, Any]:
-        """Actualiza la información de perfil con sanitización"""
+        """Actualiza la información de perfil con sanitización y encriptación de datos sensibles"""
         update_dict.pop("verification_code", None)
         update_dict.pop("roles", None)  # El usuario no puede auto-cambiarse los roles
         update_dict.pop("password_hash", None)
 
         if "nombre" in update_dict and update_dict["nombre"]:
             update_dict["nombre"] = sanitize_string(update_dict["nombre"])
+        if "address" in update_dict and update_dict["address"]:
+            update_dict["address"] = sanitize_string(update_dict["address"])
+        if "rfc" in update_dict and update_dict["rfc"]:
+            update_dict["rfc"] = sanitize_string(update_dict["rfc"]).upper()
+        if "phone" in update_dict and update_dict["phone"]:
+            update_dict["phone"] = sanitize_string(update_dict["phone"])
 
         if "bank_accounts" in update_dict and len(update_dict["bank_accounts"]) > 3:
             return self.error("Solo se permiten hasta 3 cuentas bancarias.", code="LIMIT_EXCEEDED")
