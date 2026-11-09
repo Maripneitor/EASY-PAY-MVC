@@ -18,7 +18,15 @@ class InMemoryRateLimiter:
         self._requests[key] = [t for t in self._requests[key] if t > cutoff]
 
     async def __call__(self, request: Request):
-        client_ip = request.client.host if request.client else "127.0.0.1"
+        client_host = request.client.host if request.client else "127.0.0.1"
+        headers = dict(request.headers)
+        # Extraer IP real tras proxies o Docker
+        x_forwarded = headers.get("x-forwarded-for")
+        if x_forwarded:
+            client_ip = x_forwarded.split(",")[0].strip()
+        else:
+            client_ip = headers.get("x-real-ip", client_host)
+
         route = request.url.path
         key = f"{client_ip}:{route}"
         now = time.time()

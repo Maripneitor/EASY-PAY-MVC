@@ -4,17 +4,21 @@ from typing import List, Optional
 from controllers.admin_controller import AdminController
 from schemas.role_schema import RoleCreate, RoleUpdate, UserRoleUpdate, AVAILABLE_RESOURCES, AVAILABLE_ACTIONS
 from core.permissions import require_role
+from core.rate_limiter import api_rate_limiter
 
 admin_router = APIRouter(
     prefix="/api/admin",
     tags=["Admin"],
-    dependencies=[Depends(require_role("Administrador", "admin"))]
+    dependencies=[Depends(require_role("Administrador", "admin")), Depends(api_rate_limiter)]
 )
 
 controller = AdminController()
 
+from utils.user_agent_parser import extract_client_ip
+
 def get_client_ip(request: Request) -> str:
-    return request.client.host if request.client else "127.0.0.1"
+    client_host = request.client.host if request.client else "127.0.0.1"
+    return extract_client_ip(dict(request.headers), client_host)
 
 @admin_router.get("/meta")
 async def get_system_metadata():
