@@ -108,3 +108,4 @@ class CryptoService:
         return result
 
 crypto_service = CryptoService()
+

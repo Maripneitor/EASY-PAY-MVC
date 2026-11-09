@@ -7,7 +7,12 @@ from schemas.user_schema import (
     UserCreate, UserLogin, UserUpdate, PasswordChange, 
     PasswordResetRequest, PasswordResetConfirm
 )
-from core.permissions import get_current_user_id, get_current_user_claims, get_current_user_with_permissions
+from core.permissions import (
+    get_current_user_id, 
+    get_current_user_claims, 
+    get_current_user_with_permissions,
+    require_permission
+)
 from core.rate_limiter import auth_rate_limiter
 from utils.user_agent_parser import extract_client_ip
 
@@ -241,13 +246,13 @@ async def change_password(user_id: str, data: PasswordChange, request: Request, 
     return result
 
 # --- Rutas de Tarjetas ---
-@user_router.get("/cards/{user_id}")
+@user_router.get("/cards/{user_id}", dependencies=[Depends(require_permission("wallets:read"))])
 async def get_user_cards(user_id: str, current_user_id: str = Depends(get_current_user_id)):
     if user_id != current_user_id:
         raise HTTPException(status_code=403, detail="No autorizado")
     return await controller._user_model.get_cards(user_id)
 
-@user_router.post("/cards/{user_id}")
+@user_router.post("/cards/{user_id}", dependencies=[Depends(require_permission("wallets:write"))])
 async def add_user_card(user_id: str, card: dict, current_user_id: str = Depends(get_current_user_id)):
     if user_id != current_user_id:
         raise HTTPException(status_code=403, detail="No autorizado")
@@ -256,7 +261,7 @@ async def add_user_card(user_id: str, card: dict, current_user_id: str = Depends
         return {"message": "Tarjeta agregada", "status": "success"}
     raise HTTPException(status_code=400, detail="No se pudo agregar la tarjeta")
 
-@user_router.delete("/cards/{user_id}/{card_id}")
+@user_router.delete("/cards/{user_id}/{card_id}", dependencies=[Depends(require_permission("wallets:delete"))])
 async def remove_user_card(user_id: str, card_id: str, current_user_id: str = Depends(get_current_user_id)):
     if user_id != current_user_id:
         raise HTTPException(status_code=403, detail="No autorizado")
@@ -265,7 +270,7 @@ async def remove_user_card(user_id: str, card_id: str, current_user_id: str = De
         return {"message": "Tarjeta eliminada", "status": "success"}
     raise HTTPException(status_code=400, detail="No se pudo eliminar la tarjeta")
 
-@user_router.patch("/cards/{user_id}/{card_id}/default")
+@user_router.patch("/cards/{user_id}/{card_id}/default", dependencies=[Depends(require_permission("wallets:write"))])
 async def set_default_card(user_id: str, card_id: str, current_user_id: str = Depends(get_current_user_id)):
     if user_id != current_user_id:
         raise HTTPException(status_code=403, detail="No autorizado")

@@ -19,6 +19,7 @@ from routers import (
     reminder_worker
 )
 from models.role_model import RoleModel
+from core.rbac_middleware import RBACAuthorizationMiddleware
 
 logger = logging.getLogger("EasyPayAPI")
 logging.basicConfig(
@@ -59,6 +60,8 @@ app.add_middleware(
     allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allow_headers=["Authorization", "Content-Type", "Accept", "X-Requested-With"],
 )
+
+app.add_middleware(RBACAuthorizationMiddleware)
 
 # ── Middleware de Seguridad y Hardening HTTP ─────────────────────────────────
 @app.middleware("http")

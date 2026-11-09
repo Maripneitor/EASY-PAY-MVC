@@ -38,4 +38,4 @@ class RoleResponse(RoleBase):
     created_at: Optional[datetime] = None
 
 class UserRoleUpdate(BaseModel):
-    roles: List[str] = Field(..., min_items=1, description="Lista de nombres de rol a asignar al usuario")
+    roles: List[str] = Field(..., min_length=1, description="Lista de nombres de rol a asignar al usuario")

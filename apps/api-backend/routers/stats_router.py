@@ -1,8 +1,12 @@
 from fastapi import APIRouter, HTTPException, Depends
 from controllers.stats_controller import StatsController
-from utils.security import get_current_user_id
+from core.permissions import get_current_user_id, require_permission
 
-stats_router = APIRouter(prefix="/api/stats", tags=["Statistics"])
+stats_router = APIRouter(
+    prefix="/api/stats",
+    tags=["Statistics"],
+    dependencies=[Depends(require_permission("stats:read"))]
+)
 controller = StatsController()
 
 @stats_router.get("/user/{user_id}/charts")
@@ -18,7 +22,7 @@ async def get_user_stats(user_id: str, current_user_id: str = Depends(get_curren
     return await controller.get_user_stats(user_id)
 
 @stats_router.get("/global")
-async def get_global_stats():
+async def get_global_stats(current_user_id: str = Depends(get_current_user_id)):
     return await controller.get_global_stats()
 
 @stats_router.get("/user/{user_id}/transactions")

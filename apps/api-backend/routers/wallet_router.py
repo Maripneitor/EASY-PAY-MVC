@@ -1,18 +1,18 @@
 from fastapi import APIRouter, HTTPException, Depends
 from controllers.wallet_controller import WalletController
 from schemas.wallet_schema import BankCardCreate
-from utils.security import get_current_user_id
+from core.permissions import get_current_user_id, require_permission
 
 wallet_router = APIRouter(prefix="/api/wallet", tags=["Wallet"])
 controller = WalletController()
 
-@wallet_router.get("/cards/{user_id}")
+@wallet_router.get("/cards/{user_id}", dependencies=[Depends(require_permission("wallets:read"))])
 async def get_cards(user_id: str, current_user_id: str = Depends(get_current_user_id)):
     if user_id != current_user_id:
         raise HTTPException(status_code=403, detail="No puedes consultar tarjetas de otro usuario")
     return await controller.get_user_cards(user_id)
 
-@wallet_router.get("/cards/{user_id}/default")
+@wallet_router.get("/cards/{user_id}/default", dependencies=[Depends(require_permission("wallets:read"))])
 async def get_default_card(user_id: str, current_user_id: str = Depends(get_current_user_id)):
     if user_id != current_user_id:
         raise HTTPException(status_code=403, detail="No puedes consultar tarjetas de otro usuario")
@@ -21,14 +21,14 @@ async def get_default_card(user_id: str, current_user_id: str = Depends(get_curr
         raise HTTPException(status_code=404, detail=result.get("message"))
     return result
 
-@wallet_router.post("/cards/{user_id}")
+@wallet_router.post("/cards/{user_id}", dependencies=[Depends(require_permission("wallets:write"))])
 async def add_card(user_id: str, card: BankCardCreate, current_user_id: str = Depends(get_current_user_id)):
     if user_id != current_user_id:
         raise HTTPException(status_code=403, detail="No puedes agregar tarjetas a otro usuario")
     result = await controller.add_card(user_id, card)
     return result
 
-@wallet_router.delete("/cards/{user_id}/{card_id}")
+@wallet_router.delete("/cards/{user_id}/{card_id}", dependencies=[Depends(require_permission("wallets:delete"))])
 async def delete_card(user_id: str, card_id: str, current_user_id: str = Depends(get_current_user_id)):
     if user_id != current_user_id:
         raise HTTPException(status_code=403, detail="No puedes eliminar tarjetas de otro usuario")
@@ -37,7 +37,7 @@ async def delete_card(user_id: str, card_id: str, current_user_id: str = Depends
         raise HTTPException(status_code=404, detail=result.get("message"))
     return result
 
-@wallet_router.patch("/cards/{user_id}/{card_id}/default")
+@wallet_router.patch("/cards/{user_id}/{card_id}/default", dependencies=[Depends(require_permission("wallets:write"))])
 async def set_default_card(user_id: str, card_id: str, current_user_id: str = Depends(get_current_user_id)):
     if user_id != current_user_id:
         raise HTTPException(status_code=403, detail="No puedes modificar tarjetas de otro usuario")
