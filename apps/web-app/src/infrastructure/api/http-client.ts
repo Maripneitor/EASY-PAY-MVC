@@ -1,19 +1,22 @@
 import axios, { AxiosInstance, InternalAxiosRequestConfig, AxiosResponse, AxiosError } from 'axios';
 import { STORAGE_KEYS } from '../localStorage/storage-keys';
 
-// ─── Token helpers ────────────────────────────────────────────────────────────
-const AUTH_TOKEN_KEY = STORAGE_KEYS.AUTH_TOKEN;
+// ─── Token helpers in-memory (Blindaje estricto contra ataques XSS) ───────────
+let inMemoryAccessToken: string | null = null;
 
 export const setAuthToken = (token: string): void => {
-    localStorage.setItem(AUTH_TOKEN_KEY, token);
+    inMemoryAccessToken = token;
 };
 
 export const clearAuthToken = (): void => {
-    localStorage.removeItem(AUTH_TOKEN_KEY);
+    inMemoryAccessToken = null;
+    try {
+        localStorage.removeItem(STORAGE_KEYS.AUTH_TOKEN);
+    } catch {}
 };
 
-const getAuthToken = (): string | null => {
-    return localStorage.getItem(AUTH_TOKEN_KEY);
+export const getAuthToken = (): string | null => {
+    return inMemoryAccessToken;
 };
 
 // ─── Axios instance ───────────────────────────────────────────────────────────
@@ -32,6 +35,7 @@ const getDynamicApiUrl = () => {
 export const httpClient: AxiosInstance = axios.create({
     baseURL: getDynamicApiUrl(),
     timeout: 10_000,
+    withCredentials: true, // Envía cookies HttpOnly (refresh token) para prevenir XSS
     headers: {
         'Content-Type': 'application/json',
         'Accept':        'application/json',

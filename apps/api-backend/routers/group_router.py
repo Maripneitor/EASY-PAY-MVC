@@ -300,7 +300,7 @@ async def add_member(
         "data": result.get("invitation")
     }
 
-@group_router.delete("/{group_id}/members/{user_id}")
+@group_router.delete("/{group_id}/members/{user_id}", dependencies=[Depends(require_permission("groups:delete"))])
 async def remove_member(group_id: str, user_id: str, current_user_id: str = Depends(get_current_user_id)):
     group = await controller._group_model.find_by_id(group_id)
     if not group:

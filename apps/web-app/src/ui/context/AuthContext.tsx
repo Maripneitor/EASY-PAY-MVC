@@ -2,7 +2,7 @@ import React, { createContext, useContext, useState, useCallback, useEffect } fr
 import type { ReactNode } from 'react';
 import { toast } from 'sonner';
 import { STORAGE_KEYS } from '@infrastructure/localStorage/storage-keys';
-import { clearAuthToken } from '@infrastructure/api/http-client';
+import { clearAuthToken, getAuthToken, setAuthToken } from '@infrastructure/api/http-client';
 import { authService, type User } from '@services/authService';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -50,18 +50,28 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const [isLoading, setIsLoading] = useState<boolean>(true);
     const [isAuthenticating, setIsAuthenticating] = useState<boolean>(false);
 
-    // ── Restore session from localStorage on mount ─────────────────────────────
+    // ── Restore session from in-memory token or silent refresh on mount ─────────────
     useEffect(() => {
-        const syncSession = () => {
+        const syncSession = async () => {
             try {
                 const storedUser = authService.getStoredUser();
-                const storedToken = localStorage.getItem(STORAGE_KEYS.AUTH_TOKEN);
                 const storedGuest = localStorage.getItem(STORAGE_KEYS.GUEST_SESSION);
 
                 if (storedUser) {
                     setUser(storedUser);
-                    setToken(storedToken);
                     setGuest(null);
+                    // Si el token en memoria no está cargado (tras recarga F5), recuperarlo vía refresh cookie HttpOnly
+                    if (!getAuthToken()) {
+                        try {
+                            const freshUser = await authService.getCurrentUser();
+                            if (freshUser) {
+                                setUser(freshUser);
+                            }
+                        } catch {
+                            // Si la sesión expiró completamente
+                        }
+                    }
+                    setToken(getAuthToken());
                 } else if (storedGuest) {
                     setUser(null);
                     setToken(null);
@@ -81,7 +91,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         };
 
         const handleStorageChange = (e: StorageEvent) => {
-            if (e.key === STORAGE_KEYS.AUTH_USER || e.key === STORAGE_KEYS.AUTH_TOKEN || e.key === STORAGE_KEYS.GUEST_SESSION) {
+            if (e.key === STORAGE_KEYS.AUTH_USER || e.key === STORAGE_KEYS.GUEST_SESSION) {
                 syncSession();
             }
         };
@@ -111,9 +121,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             
             if (result.status === 'success') {
                 const storedUser = authService.getStoredUser();
-                const storedToken = localStorage.getItem(STORAGE_KEYS.AUTH_TOKEN);
                 setUser(storedUser);
-                setToken(storedToken);
+                setToken(getAuthToken());
                 setGuest(null);
                 localStorage.removeItem(STORAGE_KEYS.GUEST_SESSION);
             }

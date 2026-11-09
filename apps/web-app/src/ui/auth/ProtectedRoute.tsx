@@ -2,14 +2,14 @@ import { Navigate, Outlet, useLocation } from 'react-router-dom';
 import { useAuthContext } from '../context/AuthContext';
 import { usePermissions } from '../hooks/usePermissions';
 import { ROUTES } from '../../infrastructure/routes';
-import { STORAGE_KEYS } from '../../infrastructure/localStorage/storage-keys';
+import { getAuthToken } from '../../infrastructure/api/http-client';
 import { toast } from 'sonner';
 import { useRef } from 'react';
 
 export const ProtectedRoute = () => {
     const { isAuthenticated, isLoading } = useAuthContext();
     const { isAdmin, canWriteExpenses } = usePermissions();
-    const token = localStorage.getItem(STORAGE_KEYS.AUTH_TOKEN);
+    const token = getAuthToken();
     const tempUserId = localStorage.getItem('temp_userId');
     const location = useLocation();
     const lastDeniedPathRef = useRef<string | null>(null);

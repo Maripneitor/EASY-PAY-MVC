@@ -1,17 +1,18 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from routers.notification_router import notification_router, reminder_worker
+from core.cors_config import get_allowed_cors_origins
 import asyncio
 import logging
 
 app = FastAPI(title="Easy-Pay Notification Service (MVC)", version="2.0.0")
-origins = ["*"]
+origins = get_allowed_cors_origins()
 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
     allow_credentials=True,
-    allow_methods=["*"],
+    allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allow_headers=["*"],
 )
 
@@ -39,5 +40,5 @@ async def global_exception_handler(request, exc):
     from fastapi.responses import JSONResponse
     return JSONResponse(
         status_code=500,
-        content={"detail": "Internal Server Error", "error": str(exc)}
+        content={"detail": "Ha ocurrido un error interno en el servidor. Por favor intente más tarde.", "code": "INTERNAL_SERVER_ERROR"}
     )
