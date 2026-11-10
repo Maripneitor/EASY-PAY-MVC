@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from routers.group_router import group_router
-from core.cors_config import get_allowed_cors_origins
+from core.cors_config import get_allowed_cors_origins, get_allowed_cors_headers
 import logging
 
 app = FastAPI(
@@ -11,13 +11,14 @@ app = FastAPI(
 )
 
 origins = get_allowed_cors_origins()
+allowed_headers = get_allowed_cors_headers()
 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-    allow_headers=["*"],
+    allow_headers=allowed_headers,
 )
 
 app.include_router(group_router)

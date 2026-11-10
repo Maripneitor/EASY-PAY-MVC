@@ -95,6 +95,22 @@ class AuthService {
         return null;
     }
 
+    async refreshToken(): Promise<{ status: string; access_token?: string; user?: User } | null> {
+        try {
+            const response = await httpClient.post<{ status: string; access_token?: string; user?: User }>('/auth/refresh');
+            if (response.data && response.data.status === 'success' && response.data.access_token) {
+                setAuthToken(response.data.access_token);
+                if (response.data.user) {
+                    this.updateUserSession(response.data.user);
+                }
+                return response.data;
+            }
+        } catch (error) {
+            console.warn('[AuthService] Error in refreshToken:', error);
+        }
+        return null;
+    }
+
     isAuthenticated(): boolean {
         return !!localStorage.getItem(STORAGE_KEYS.AUTH_USER);
     }

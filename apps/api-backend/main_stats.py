@@ -1,18 +1,19 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from routers.stats_router import stats_router
-from core.cors_config import get_allowed_cors_origins
+from core.cors_config import get_allowed_cors_origins, get_allowed_cors_headers
 
 app = FastAPI(title="Easy-Pay Statistics Service (MVC)")
 
 origins = get_allowed_cors_origins()
+allowed_headers = get_allowed_cors_headers()
 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-    allow_headers=["*"],
+    allow_headers=allowed_headers,
 )
 
 app.include_router(stats_router)

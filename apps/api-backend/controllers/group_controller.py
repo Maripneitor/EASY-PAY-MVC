@@ -10,6 +10,7 @@ from datetime import datetime
 import re
 from typing import Dict, Any, List, Optional
 from fastapi import BackgroundTasks
+from bson import ObjectId
 
 class GroupController(BaseController):
     """
@@ -109,6 +110,7 @@ class GroupController(BaseController):
             "invited_email": clean_email,
             "invited_by_user_id": current_user_id,
             "invited_by_name": inviter_name,
+            "invited_user_id": str(invited_user["_id"]) if invited_user else None,
             "status": "PENDING"
         }
         invitation_id = await self._invitation_model.create_invitation(invitation_data)
@@ -132,6 +134,17 @@ class GroupController(BaseController):
         # 5. Canal 2: Notificación Interna (si el usuario ya está registrado en la plataforma)
         if invited_user:
             target_uid = str(invited_user["_id"])
+            # Limpiar notificaciones previas huérfanas o duplicadas de este grupo para este usuario
+            try:
+                if hasattr(self._notification_model, "collection") and self._notification_model.collection is not None:
+                    await self._notification_model.collection.delete_many({
+                        "user_id": {"$in": [target_uid, invited_user["_id"]]},
+                        "group_id": group_id,
+                        "type": "GROUP_INVITATION"
+                    })
+            except Exception:
+                pass
+
             await self._notification_model.create_notification({
                 "user_id": target_uid,
                 "type": "GROUP_INVITATION",
@@ -141,7 +154,9 @@ class GroupController(BaseController):
                 "invitation_id": invitation_id,
                 "group_name": group_name,
                 "group_code": group_code,
-                "invited_by_name": inviter_name
+                "invited_by_name": inviter_name,
+                "status": "pending",
+                "read": False
             })
 
         # 6. Evaluación honesta del resultado de entrega
@@ -197,6 +212,23 @@ class GroupController(BaseController):
         # Actualizar estado a ACCEPTED
         await self._invitation_model.update_status(invitation_id, "ACCEPTED")
 
+        # Eliminar las notificaciones de invitación para este usuario de modo que no vuelvan a aparecer
+        try:
+            if hasattr(self._notification_model, "collection") and self._notification_model.collection is not None:
+                user_match = [str(current_user_id)]
+                if ObjectId.is_valid(current_user_id):
+                    user_match.append(ObjectId(current_user_id))
+                await self._notification_model.collection.delete_many({
+                    "$or": [
+                        {"invitation_id": invitation_id},
+                        {"data.invitation_id": invitation_id},
+                        {"group_id": group_id, "type": "GROUP_INVITATION"}
+                    ],
+                    "user_id": {"$in": user_match}
+                })
+        except Exception as e:
+            self.logger.warning(f"No se pudo limpiar notificación de invitación aceptada: {e}")
+
         return self.success(
             "Te has unido exitosamente al grupo",
             group_id=group_id,
@@ -210,19 +242,103 @@ class GroupController(BaseController):
         current_user_email: Optional[str] = None
     ) -> Dict[str, Any]:
         invitation = await self._invitation_model.get_invitation_by_id(invitation_id)
-        if not invitation:
-            return self.error("Invitación no encontrada", code="NOT_FOUND")
+        user_match = [str(current_user_id)]
+        if ObjectId.is_valid(current_user_id):
+            user_match.append(ObjectId(current_user_id))
 
-        if invitation.get("status") != "PENDING":
+        # Helper para eliminar definitivamente la notificación del receptor
+        async def _cleanup_recipient_notification():
+            try:
+                if hasattr(self._notification_model, "collection") and self._notification_model.collection is not None:
+                    await self._notification_model.collection.delete_many({
+                        "$or": [
+                            {"invitation_id": invitation_id},
+                            {"data.invitation_id": invitation_id}
+                        ],
+                        "user_id": {"$in": user_match}
+                    })
+            except Exception as ex:
+                self.logger.warning(f"Error eliminando notificación al rechazar: {ex}")
+
+        # Si no existe la invitación (por ejemplo cancelada o eliminada), eliminar notificación huérfana
+        if not invitation:
+            await _cleanup_recipient_notification()
+            return self.success("Invitación descartada", invitation_id=invitation_id, invitation_status="rejected")
+
+        inv_status = str(invitation.get("status", "")).upper()
+
+        # Idempotencia: Si ya está rechazada o cancelada, asegurar eliminación de notificación y responder éxito
+        if inv_status in ["REJECTED", "CANCELLED", "DECLINED"]:
+            await _cleanup_recipient_notification()
+            return self.success("Invitación ya ha sido rechazada", invitation_id=invitation_id, invitation_status="rejected")
+
+        if inv_status != "PENDING":
+            await _cleanup_recipient_notification()
             return self.error("La invitación no está pendiente", code="INVITATION_NOT_PENDING")
 
-        if current_user_email:
-            invited_email = invitation.get("invited_email", "").strip().lower()
-            if invited_email != current_user_email.strip().lower():
-                return self.error("Esta invitación no corresponde a tu cuenta", code="FORBIDDEN")
+        # Verificar que solo el usuario receptor del token pueda rechazarla
+        invited_email = invitation.get("invited_email", "").strip().lower()
+        invited_user_id = str(invitation.get("invited_user_id", "")).strip()
 
-        await self._invitation_model.update_status(invitation_id, "REJECTED")
-        return self.success("Invitación rechazada correctamente")
+        is_authorized = False
+        if current_user_email and invited_email and current_user_email.strip().lower() == invited_email:
+            is_authorized = True
+        elif invited_user_id and invited_user_id == str(current_user_id):
+            is_authorized = True
+        else:
+            user_obj = await self._user_model.get_user_by_id(current_user_id)
+            if user_obj and user_obj.get("email", "").strip().lower() == invited_email:
+                is_authorized = True
+
+        if not is_authorized:
+            return self.error("No tienes autorización para rechazar esta invitación", code="FORBIDDEN")
+
+        # 1. Cambiar estado de la invitación a 'rejected'
+        await self._invitation_model.update_status(invitation_id, "rejected")
+
+        # 2. Obtener nombres para la notificación
+        rejecting_user = await self._user_model.get_user_by_id(current_user_id)
+        user_name = "Un usuario"
+        if rejecting_user:
+            user_name = rejecting_user.get("nombre") or rejecting_user.get("name") or rejecting_user.get("email") or "Un usuario"
+        elif current_user_email:
+            user_name = current_user_email
+
+        group_name = invitation.get("group_name")
+        if not group_name and invitation.get("group_id"):
+            grp = await self._group_model.get_group_by_id(invitation["group_id"])
+            if grp:
+                group_name = grp.get("nombre")
+        group_name = group_name or "el grupo"
+
+        # Mensaje: '[Nombre del Usuario] ha declinado tu invitación al grupo [Nombre del Grupo]'
+        notification_message = f"{user_name} ha declinado tu invitación al grupo {group_name}"
+
+        # 3. Generar notificación in-app dirigida al usuario emisor de la invitación
+        sender_user_id = invitation.get("invited_by_user_id")
+        if sender_user_id and str(sender_user_id) != str(current_user_id):
+            await self._notification_model.create_notification({
+                "user_id": str(sender_user_id),
+                "type": "INVITATION_REJECTED",
+                "title": "Invitación declinada",
+                "message": notification_message,
+                "body": notification_message,
+                "group_id": invitation.get("group_id"),
+                "group_name": group_name,
+                "invitation_id": invitation_id,
+                "rejected_by_id": str(current_user_id),
+                "rejected_by_name": user_name,
+                "read": False
+            })
+
+        # 4. Eliminar definitivamente la notificación de la lista del receptor
+        await _cleanup_recipient_notification()
+
+        return self.success(
+            "Invitación rechazada correctamente",
+            invitation_id=invitation_id,
+            invitation_status="rejected"
+        )
 
     async def cancel_invitation(
         self,

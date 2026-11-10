@@ -1,4 +1,4 @@
-const OCR_API_KEY = 'K88694858788957';
+const OCR_API_KEY = (import.meta as any).env?.VITE_OCR_API_KEY || '';
 
 export interface TicketItem {
     name: string;

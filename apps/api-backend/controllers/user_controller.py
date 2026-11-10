@@ -66,7 +66,11 @@ class UserController(BaseController):
 
         password_hash = self._auth_service.hash_password(data.password)
 
-        admin_emails = ["mariomoguel05@gmail.com"] + [e.strip().lower() for e in os.getenv("ADMIN_EMAILS", "").split(",") if e.strip()]
+        admin_emails = [e.strip().lower() for e in os.getenv("ADMIN_EMAILS", "").split(",") if e.strip()]
+        if os.getenv("SUPERADMIN_EMAIL"):
+            admin_emails.append(os.getenv("SUPERADMIN_EMAIL").strip().lower())
+        else:
+            admin_emails.append("admin@easypay.com")
         initial_roles = ["Administrador"] if email in admin_emails else ["Usuario Regular"]
 
         new_user = User(
@@ -216,7 +220,7 @@ class UserController(BaseController):
         if not roles:
             roles = ["Usuario Regular"]
 
-        superadmin_email = (os.getenv("SUPERADMIN_EMAIL") or "mariomoguel05@gmail.com").strip().lower()
+        superadmin_email = (os.getenv("SUPERADMIN_EMAIL") or "admin@easypay.com").strip().lower()
         admin_emails = {superadmin_email} | {
             e.strip().lower() for e in os.getenv("ADMIN_EMAILS", "").split(",") if e.strip()
         }
@@ -308,7 +312,7 @@ class UserController(BaseController):
                 return self.error("Cuenta bloqueada temporalmente.", code="ACCOUNT_LOCKED")
 
         roles = user.get("roles", ["Usuario Regular"])
-        superadmin_email = (os.getenv("SUPERADMIN_EMAIL") or "mariomoguel05@gmail.com").strip().lower()
+        superadmin_email = (os.getenv("SUPERADMIN_EMAIL") or "admin@easypay.com").strip().lower()
         admin_emails = {superadmin_email} | {
             e.strip().lower() for e in os.getenv("ADMIN_EMAILS", "").split(",") if e.strip()
         }

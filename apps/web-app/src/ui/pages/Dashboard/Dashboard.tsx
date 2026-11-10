@@ -449,18 +449,18 @@ export const Dashboard: React.FC = () => {
                             animate={{ opacity: 1, scale: 1, y: 0 }}
                             exit={{ opacity: 0, scale: 0.95, y: 16 }}
                             transition={{ duration: 0.18, ease: "easeOut" }}
-                            className="relative w-full max-w-md bg-[#0f172a] rounded-3xl border border-rose-500/30 p-6 sm:p-8 shadow-2xl text-center space-y-6 overflow-hidden"
+                            className="relative w-full max-w-md bg-[var(--bg-surface)] rounded-3xl border border-rose-500/30 p-6 sm:p-8 shadow-2xl text-center space-y-6 overflow-hidden"
                         >
                             <div className="w-14 h-14 rounded-2xl bg-rose-500/10 text-rose-500 border border-rose-500/20 flex items-center justify-center mx-auto shadow-sm">
                                 <Trash2 size={26} />
                             </div>
 
                             <div className="space-y-2">
-                                <h3 className="text-xl font-black text-white uppercase tracking-tight">
+                                <h3 className="text-xl font-bold text-[var(--text-primary)] uppercase tracking-tight">
                                     ¿Eliminar este grupo?
                                 </h3>
-                                <p className="text-xs text-slate-400 font-medium leading-relaxed">
-                                    Estás a punto de eliminar <span className="text-white font-bold">"{groupToDeleteConfirm.name}"</span>. Esta acción es irreversible y eliminará todos los gastos y balances asociados.
+                                <p className="text-xs text-[var(--text-secondary)] font-medium leading-relaxed">
+                                    Estás a punto de eliminar <span className="text-[var(--text-primary)] font-bold">"{groupToDeleteConfirm.name}"</span>. Esta acción es irreversible y eliminará todos los gastos y balances asociados.
                                 </p>
                             </div>
 

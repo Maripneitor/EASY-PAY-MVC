@@ -148,7 +148,7 @@ export const MyPayments = () => {
                         <div className="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-[3rem] overflow-hidden shadow-xl">
                             {transactions.length > 0 ? (
                                 <div className="overflow-x-auto">
-                                    <table className="w-full text-left border-collapse">
+                                    <table className="w-full text-left border-collapse min-w-[540px]">
                                         <thead>
                                             <tr className="border-b border-[var(--border-color)] text-[10px] font-black text-[var(--text-secondary)] uppercase tracking-[0.2em] bg-black/5">
                                                 <th className="px-10 py-6">{I18N_TEXTS.TABLE_HEADER.TRANSACTION}</th>

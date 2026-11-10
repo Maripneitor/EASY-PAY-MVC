@@ -7,7 +7,7 @@ from schemas.role_schema import RoleCreate, RoleUpdate
 from services.audit_service import AuditService
 from typing import Dict, Any, List, Optional
 
-PRIMARY_SUPERADMIN_EMAIL = (os.getenv("SUPERADMIN_EMAIL") or "mariomoguel05@gmail.com").strip().lower()
+PRIMARY_SUPERADMIN_EMAIL = (os.getenv("SUPERADMIN_EMAIL") or "admin@easypay.com").strip().lower()
 SUPERADMIN_EMAILS = {PRIMARY_SUPERADMIN_EMAIL} | {
     e.strip().lower() for e in os.getenv("SUPERADMIN_EMAILS", "").split(",") if e.strip()
 } | {
@@ -189,16 +189,39 @@ class AdminController(BaseController):
     async def get_audit_logs(
         self,
         user_email: Optional[str] = None,
+        user_id: Optional[str] = None,
         action: Optional[str] = None,
         resource: Optional[str] = None,
-        limit: int = 100,
-        skip: int = 0
-    ) -> List[Dict[str, Any]]:
-        """Consulta el historial de auditoría de usuarios y acciones"""
-        return await self._audit_service.get_audit_trail(
+        limit: int = 50,
+        skip: int = 0,
+        page: Optional[int] = None,
+        page_size: Optional[int] = None
+    ) -> Dict[str, Any]:
+        """Consulta el historial de auditoría e inmutabilidad de forma paginada"""
+        effective_limit = page_size if page_size is not None else limit
+        effective_skip = skip if skip is not None else (0 if page is None else (page - 1) * effective_limit)
+
+        total = await self._audit_service.count_audit_logs(
             user_email=user_email,
+            user_id=user_id,
+            action=action,
+            resource=resource
+        )
+        items = await self._audit_service.get_audit_trail(
+            user_email=user_email,
+            user_id=user_id,
             action=action,
             resource=resource,
-            limit=limit,
-            skip=skip
+            limit=effective_limit,
+            skip=effective_skip
         )
+        current_page = page if page is not None else ((effective_skip // effective_limit) + 1 if effective_limit > 0 else 1)
+        total_pages = ((total + effective_limit - 1) // effective_limit) if effective_limit > 0 else 1
+
+        return {
+            "items": items,
+            "total": total,
+            "page": current_page,
+            "page_size": effective_limit,
+            "total_pages": total_pages
+        }

@@ -38,8 +38,8 @@ DEMO_USERS = [
         "role": "Usuario Regular"
     },
     {
-        "nombre": "Mario Moguel",
-        "email": "mariomoguel05@gmail.com",
+        "nombre": "Super Administrador",
+        "email": os.getenv("SUPERADMIN_EMAIL", "admin@easypay.com"),
         "password": "Admin1234!",
         "roles": ["Administrador"],
         "role": "Administrador"

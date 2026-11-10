@@ -1,0 +1,2 @@
+export { RoleBadge } from './RoleBadge';
+

@@ -25,10 +25,20 @@ export interface AuditLogItem {
     user_email?: string;
     action: string;
     resource: string;
+    metadata?: Record<string, any>;
     details?: Record<string, any>;
     ip_address?: string;
     user_agent?: string;
+    created_at?: string;
     timestamp: string;
+}
+
+export interface PaginatedAuditLogs {
+    items: AuditLogItem[];
+    total: number;
+    page: number;
+    page_size: number;
+    total_pages: number;
 }
 
 export interface SystemMeta {
@@ -62,8 +72,28 @@ class AdminService {
         return response.data;
     }
 
-    async getAuditLogs(params?: { user_email?: string; action?: string; resource?: string; limit?: number }): Promise<AuditLogItem[]> {
-        const response = await httpClient.get<AuditLogItem[]>('/admin/audit-logs', { params });
+    async getAuditLogs(params?: { user_email?: string; user_id?: string; action?: string; resource?: string; limit?: number; page?: number; page_size?: number }): Promise<AuditLogItem[]> {
+        const response = await httpClient.get<any>('/admin/audit-logs', { params });
+        if (Array.isArray(response.data)) {
+            return response.data;
+        }
+        if (response.data && Array.isArray(response.data.items)) {
+            return response.data.items;
+        }
+        return [];
+    }
+
+    async getAuditLogsPaginated(params?: { user_email?: string; user_id?: string; action?: string; resource?: string; limit?: number; page?: number; page_size?: number }): Promise<PaginatedAuditLogs> {
+        const response = await httpClient.get<any>('/admin/audit-logs', { params });
+        if (Array.isArray(response.data)) {
+            return {
+                items: response.data,
+                total: response.data.length,
+                page: 1,
+                page_size: response.data.length,
+                total_pages: 1
+            };
+        }
         return response.data;
     }
 

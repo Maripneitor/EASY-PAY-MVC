@@ -57,15 +57,14 @@ const EMPTY_COLOR = '#e2e8f0'; // Light gray for empty states
 // --- Sub-componentes Semánticos ---
 
 const EmptyStateOverlay = () => (
-    <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-[var(--bg-card)]/40 backdrop-blur-[2px] rounded-[2.5rem]">
-        <div className="p-4 bg-white/10 rounded-full mb-3 shadow-sm border border-white/5">
-            <AlertCircle size={24} className="text-slate-400" />
+    <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-[var(--bg-card)]/60 backdrop-blur-[2px] rounded-[2.5rem]">
+        <div className="p-4 bg-[var(--hover-bg)] rounded-full mb-3 shadow-sm border border-[var(--border-color)]">
+            <AlertCircle size={24} className="text-[var(--text-secondary)]" />
         </div>
-        <p className="text-xs font-black uppercase tracking-widest text-slate-500 text-center px-4">
+        <p className="text-xs font-bold uppercase tracking-widest text-[var(--text-secondary)] text-center px-4">
             Aún no hay transacciones para analizar
         </p>
     </div>
-
 );
 
 const CategoryDonutChart = ({ data }: { data: any[] }) => {
@@ -122,7 +121,7 @@ const IncomeExpenseChart = ({ data }: { data: any[] }) => {
             {isEmpty && <EmptyStateOverlay />}
             <ResponsiveContainer width="100%" height="100%" debounce={50}>
                 <BarChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255,255,255,0.05)" />
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border-subtle)" />
                     <XAxis 
                         dataKey="month" 
                         axisLine={false} 
@@ -166,7 +165,7 @@ const ExpenseLineChart = ({ data }: { data: any[] }) => {
                             <stop offset="95%" stopColor={isEmpty ? EMPTY_COLOR : "var(--primary)"} stopOpacity={0}/>
                         </linearGradient>
                     </defs>
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255,255,255,0.05)" />
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border-subtle)" />
                     <XAxis 
                         dataKey="month" 
                         axisLine={false} 
@@ -241,7 +240,7 @@ export const StatsPage = () => {
                 rightSlot={
                     <button 
                         onClick={() => refresh()}
-                        className="p-3 bg-white/5 hover:bg-white/10 rounded-2xl transition-all border border-white/10 text-[var(--text-primary)]"
+                        className="p-3 bg-[var(--hover-bg)] hover:bg-black/5 dark:hover:bg-white/5 rounded-2xl transition-all border border-[var(--border-color)] text-[var(--text-primary)]"
                         title="Actualizar"
                     >
                         <RotateCw size={24} className={loading ? "animate-spin" : ""} />
@@ -445,7 +444,7 @@ export const StatsPage = () => {
                         <div className="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-[3rem] overflow-hidden shadow-xl backdrop-blur-xl">
                             {transactions.length > 0 ? (
                                 <div className="overflow-x-auto">
-                                    <table className="w-full text-left border-collapse">
+                                    <table className="w-full text-left border-collapse min-w-[540px]">
                                         <thead>
                                             <tr className="border-b border-[var(--border-color)] text-[10px] font-black text-[var(--text-secondary)] uppercase tracking-[0.2em] bg-black/5">
                                                 <th className="px-10 py-6">Transacción</th>

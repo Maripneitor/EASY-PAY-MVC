@@ -3,7 +3,7 @@ from typing import List, Optional
 
 from controllers.admin_controller import AdminController
 from schemas.role_schema import RoleCreate, RoleUpdate, UserRoleUpdate, AVAILABLE_RESOURCES, AVAILABLE_ACTIONS
-from core.permissions import require_role
+from core.permissions import require_role, require_permission
 from core.rate_limiter import api_rate_limiter
 
 admin_router = APIRouter(
@@ -57,6 +57,56 @@ async def assign_user_roles(
         raise HTTPException(status_code=status_code, detail=result.get("message"))
     return result
 
+@admin_router.delete("/users/{user_id}", dependencies=[Depends(require_permission("users:delete"))])
+async def delete_user(
+    user_id: str,
+    request: Request,
+    admin_user: dict = Depends(require_role("Administrador", "admin"))
+):
+    """
+    Elimina un usuario del sistema (requiere rol de Administrador y permiso users:delete).
+    Bloquea a usuarios con rol Editor o Usuario Regular con 403.
+    """
+    admin_id = str(admin_user.get("_id") or admin_user.get("id"))
+    admin_email = admin_user.get("email", "admin@easypay.com")
+    ip = get_client_ip(request)
+
+    # 1. Regla: Un administrador no puede eliminarse a sí mismo
+    if str(user_id) == str(admin_id):
+        raise HTTPException(
+            status_code=403,
+            detail="Operación denegada: No puedes eliminar tu propia cuenta de Administrador."
+        )
+
+    # 2. Regla: Protección del Superadministrador Principal
+    target_user = await controller._user_model.get_user_by_id(user_id)
+    if not target_user:
+        raise HTTPException(status_code=404, detail="Usuario no encontrado")
+
+    target_email = (target_user.get("email") or "").strip().lower()
+    from controllers.admin_controller import PRIMARY_SUPERADMIN_EMAIL, SUPERADMIN_EMAILS
+    if target_email == PRIMARY_SUPERADMIN_EMAIL or target_email in SUPERADMIN_EMAILS:
+        raise HTTPException(
+            status_code=403,
+            detail="Operación denegada: La cuenta del Superadministrador principal está protegida contra eliminación."
+        )
+
+    success = await controller._user_model.delete_by_id(user_id)
+    if not success:
+        raise HTTPException(status_code=400, detail="No se pudo eliminar el usuario")
+
+    # Registrar en auditoría inmutable
+    await controller._audit_service.log_access(
+        action="USER_DELETED",
+        user_id=admin_id,
+        user_email=admin_email,
+        resource="users",
+        details={"deleted_user_id": user_id, "deleted_user_email": target_email},
+        ip_address=ip
+    )
+
+    return {"status": "success", "message": f"Usuario {target_email} eliminado correctamente"}
+
 # ── 2. GESTIÓN DE ROLES Y PERMISOS DINÁMICOS ─────────────────────────────────
 @admin_router.get("/roles")
 async def get_all_roles():
@@ -105,21 +155,38 @@ async def update_role(
         raise HTTPException(status_code=status_code, detail=result.get("message"))
     return result
 
-# ── 3. REGISTRO DE AUDITORÍA Y ACCESOS ───────────────────────────────────────
-@admin_router.get("/audit-logs")
+# ── 3. REGISTRO DE AUDITORÍA Y ACCESOS (INMUTABLE Y PAGINADO) ───────────────
+@admin_router.get(
+    "/audit-logs",
+    dependencies=[Depends(require_role("Administrador", "admin")), Depends(require_permission("audit:read"))]
+)
 async def get_audit_logs(
-    user_email: Optional[str] = Query(None),
-    action: Optional[str] = Query(None),
-    resource: Optional[str] = Query(None),
-    limit: int = Query(100, ge=1, le=500),
-    skip: int = Query(0, ge=0)
+    page: int = Query(1, ge=1, description="Número de página (1-based)"),
+    page_size: int = Query(50, ge=1, le=500, description="Cantidad de registros por página"),
+    limit: Optional[int] = Query(None, ge=1, le=500, description="Límite alternativo de registros"),
+    skip: Optional[int] = Query(None, ge=0, description="Desplazamiento alternativo"),
+    user_email: Optional[str] = Query(None, description="Filtrar por correo electrónico del usuario"),
+    user_id: Optional[str] = Query(None, description="Filtrar por ID de usuario"),
+    action: Optional[str] = Query(None, description="Filtrar por acción ejecutada"),
+    resource: Optional[str] = Query(None, description="Filtrar por recurso del sistema"),
+    admin_user: dict = Depends(require_role("Administrador", "admin"))
 ):
-    """Consultar el registro de auditoría e historial de accesos de todos los usuarios"""
-    logs = await controller.get_audit_logs(
+    """
+    Consulta paginada del Registro de Auditoría Inmutable (audit_logs).
+    Exclusivamente accesible para usuarios con rol de Administrador y permiso audit:read.
+    Devuelve registros sellados con id, user_id, action, resource, ip_address, user_agent, metadata y created_at.
+    """
+    effective_limit = limit or page_size
+    effective_skip = skip if skip is not None else ((page - 1) * effective_limit)
+
+    result = await controller.get_audit_logs(
         user_email=user_email,
+        user_id=user_id,
         action=action,
         resource=resource,
-        limit=limit,
-        skip=skip
+        limit=effective_limit,
+        skip=effective_skip,
+        page=page if skip is None else ((effective_skip // effective_limit) + 1),
+        page_size=effective_limit
     )
-    return logs
+    return result

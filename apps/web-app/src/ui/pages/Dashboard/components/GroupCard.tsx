@@ -129,9 +129,9 @@ export const GroupCard: React.FC<GroupCardProps> = ({
             whileTap={{ scale: 0.98 }}
             onClick={handleCardClick}
             className={cn(
-                "group relative w-full rounded-2xl p-5 transition-all duration-200 cursor-pointer shadow-md",
-                "bg-slate-900/80 hover:bg-slate-900/95 border border-slate-800/80 hover:border-slate-700 hover:shadow-xl hover:shadow-cyan-500/5",
-                isSelected && "border-blue-500 bg-blue-500/10 ring-2 ring-blue-500/30",
+                "group relative w-full rounded-2xl p-5 transition-all duration-200 cursor-pointer shadow-sm",
+                "bg-[var(--bg-card)] hover:bg-[var(--hover-bg)] border border-[var(--border-color)] hover:border-[var(--primary)]/30",
+                isSelected && "border-indigo-500 bg-indigo-500/10 ring-2 ring-indigo-500/30",
                 className
             )}
         >
@@ -166,17 +166,17 @@ export const GroupCard: React.FC<GroupCardProps> = ({
                 <div className="flex items-start justify-between gap-3 w-full min-w-0">
                     <div className="flex items-center gap-3 min-w-0 flex-1">
                         <div className={cn(
-                            "w-12 h-12 rounded-xl flex items-center justify-center shrink-0 font-black text-base shadow-sm border border-slate-700/60 transition-transform group-hover:scale-105 duration-200",
+                            "w-12 h-12 rounded-xl flex items-center justify-center shrink-0 font-black text-base shadow-sm border border-[var(--border-subtle)] transition-transform group-hover:scale-105 duration-200",
                             appearance.bg,
                             appearance.color
                         )}>
                             {group.name.charAt(0).toUpperCase()}
                         </div>
                         <div className="min-w-0 flex-1">
-                            <h3 className="font-bold text-base text-slate-100 truncate leading-snug" title={group.name}>
+                            <h3 className="font-bold text-base text-[var(--text-primary)] truncate leading-snug" title={group.name}>
                                 {group.name}
                             </h3>
-                            <p className="text-xs text-slate-400 truncate mt-0.5" title={group.lastAct || "Activo ahora"}>
+                            <p className="text-xs text-[var(--text-secondary)] truncate mt-0.5" title={group.lastAct || "Activo ahora"}>
                                 {group.lastAct || "Activo ahora"}
                             </p>
                         </div>
@@ -185,7 +185,7 @@ export const GroupCard: React.FC<GroupCardProps> = ({
                     {/* Menú de Opciones y Badge ADMIN alineados a la derecha */}
                     <div className="flex items-center gap-2 shrink-0 pt-0.5">
                         {!isSelectionMode && group.isAdmin && (
-                            <span className="px-2 py-0.5 text-[10px] font-black uppercase tracking-wider bg-blue-500/15 border border-blue-500/30 text-blue-400 rounded-md">
+                            <span className="px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider bg-indigo-500/10 border border-indigo-500/20 text-indigo-500 dark:text-indigo-400 rounded-md">
                                 ADMIN
                             </span>
                         )}
@@ -218,8 +218,8 @@ export const GroupCard: React.FC<GroupCardProps> = ({
                                     className={cn(
                                         "w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-150 active:scale-95 border",
                                         isMenuOpen
-                                            ? "bg-slate-800 text-white border-slate-700 shadow-sm"
-                                            : "bg-slate-800/40 hover:bg-slate-800 text-slate-400 hover:text-white border-slate-800 hover:border-slate-700/80"
+                                            ? "bg-[var(--hover-bg)] text-[var(--text-primary)] border-[var(--border-color)] shadow-sm"
+                                            : "bg-transparent hover:bg-[var(--hover-bg)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] border-transparent hover:border-[var(--border-color)]"
                                     )}
                                     title="Opciones de grupo"
                                     aria-label="Opciones de grupo"
@@ -234,16 +234,16 @@ export const GroupCard: React.FC<GroupCardProps> = ({
                                             animate={{ opacity: 1, scale: 1, y: 0 }}
                                             exit={{ opacity: 0, scale: 0.95, y: -4 }}
                                             transition={{ duration: 0.15, ease: "easeOut" }}
-                                            className="absolute right-0 top-9 z-40 w-44 bg-slate-900 border border-slate-700 rounded-xl shadow-2xl p-1.5 space-y-1 backdrop-blur-xl"
+                                            className="absolute right-0 top-9 z-40 w-44 bg-[var(--bg-surface)] border border-[var(--border-color)] rounded-xl shadow-2xl p-1.5 space-y-1 backdrop-blur-xl"
                                         >
                                             {onEdit && (
                                                 <button
                                                     type="button"
                                                     data-action-btn
                                                     onClick={handleEditClick}
-                                                    className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-semibold text-slate-300 hover:text-blue-400 hover:bg-slate-800/80 rounded-lg transition-all duration-150 active:scale-[0.98] text-left"
+                                                    className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-semibold text-[var(--text-primary)] hover:text-indigo-500 hover:bg-[var(--hover-bg)] rounded-lg transition-all duration-150 active:scale-[0.98] text-left"
                                                 >
-                                                    <Pencil size={14} className="text-blue-400 shrink-0" />
+                                                    <Pencil size={14} className="text-indigo-500 shrink-0" />
                                                     <span>Editar grupo</span>
                                                 </button>
                                             )}
@@ -252,9 +252,9 @@ export const GroupCard: React.FC<GroupCardProps> = ({
                                                     type="button"
                                                     data-action-btn
                                                     onClick={handleDeleteClick}
-                                                    className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-semibold text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 rounded-lg transition-all duration-150 active:scale-[0.98] text-left"
+                                                    className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-semibold text-rose-500 hover:text-rose-400 hover:bg-rose-500/10 rounded-lg transition-all duration-150 active:scale-[0.98] text-left"
                                                 >
-                                                    <Trash2 size={14} className="text-rose-400 shrink-0" />
+                                                    <Trash2 size={14} className="text-rose-500 shrink-0" />
                                                     <span>Eliminar grupo</span>
                                                 </button>
                                             )}
@@ -269,16 +269,16 @@ export const GroupCard: React.FC<GroupCardProps> = ({
                 {/* ── Cuerpo: Métricas Financieras Elásticas ("TOTAL GRUPO" y "TU SALDO") ── */}
                 <div className="grid grid-cols-2 gap-3 min-w-0 w-full">
                     {/* Tarjeta: Total Grupo */}
-                    <div className="bg-slate-950/40 border border-slate-800/80 rounded-xl p-3 flex flex-col justify-center min-w-0 shadow-sm">
-                        <div className="flex items-center gap-1.5 text-slate-400 mb-1">
-                            <Receipt size={13} className="text-blue-400 shrink-0" />
-                            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 truncate">
+                    <div className="bg-[var(--hover-bg)] border border-[var(--border-color)] rounded-xl p-3 flex flex-col justify-center min-w-0 shadow-sm">
+                        <div className="flex items-center gap-1.5 text-[var(--text-secondary)] mb-1">
+                            <Receipt size={13} className="text-indigo-500 dark:text-indigo-400 shrink-0" />
+                            <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-secondary)] truncate">
                                 Total grupo
                             </span>
                         </div>
                         <p 
                             title={totalStr}
-                            className="font-mono font-bold text-slate-100 text-sm sm:text-base tracking-tight truncate leading-snug"
+                            className="font-mono font-bold text-[var(--text-primary)] text-sm sm:text-base tracking-tight truncate leading-snug"
                         >
                             {totalStr}
                         </p>
@@ -288,13 +288,13 @@ export const GroupCard: React.FC<GroupCardProps> = ({
                     <div className={cn(
                         "rounded-xl p-3 flex flex-col justify-center min-w-0 shadow-sm border transition-colors",
                         hasDebt 
-                            ? "bg-rose-500/10 border-rose-500/25 text-rose-400" 
+                            ? "bg-rose-500/10 border-rose-500/25 text-rose-500 dark:text-rose-400" 
                             : hasCredit 
-                            ? "bg-emerald-500/10 border-emerald-500/25 text-emerald-400" 
-                            : "bg-slate-950/40 border-slate-800/80 text-slate-300"
+                            ? "bg-emerald-500/10 border-emerald-500/25 text-emerald-600 dark:text-emerald-400" 
+                            : "bg-[var(--hover-bg)] border border-[var(--border-color)] text-[var(--text-secondary)]"
                     )}>
                         <div className="flex items-center gap-1.5 mb-1">
-                            <Wallet size={13} className={cn("shrink-0", hasDebt ? "text-rose-400" : hasCredit ? "text-emerald-400" : "text-slate-400")} />
+                            <Wallet size={13} className={cn("shrink-0", hasDebt ? "text-rose-500 dark:text-rose-400" : hasCredit ? "text-emerald-600 dark:text-emerald-400" : "text-[var(--text-secondary)]")} />
                             <span className="text-[10px] font-bold uppercase tracking-wider truncate">
                                 {hasDebt ? "Tu deuda" : hasCredit ? "A favor" : "Al día"}
                             </span>
@@ -303,7 +303,7 @@ export const GroupCard: React.FC<GroupCardProps> = ({
                             title={`${hasCredit ? "+" : ""}${balanceStr}`}
                             className={cn(
                                 "font-mono font-bold text-sm sm:text-base tracking-tight truncate leading-snug",
-                                hasDebt ? "text-rose-400" : hasCredit ? "text-emerald-400" : "text-slate-100"
+                                hasDebt ? "text-rose-500 dark:text-rose-400" : hasCredit ? "text-emerald-600 dark:text-emerald-400" : "text-[var(--text-primary)]"
                             )}
                         >
                             {hasCredit ? "+" : ""}{balanceStr}
@@ -312,17 +312,17 @@ export const GroupCard: React.FC<GroupCardProps> = ({
                 </div>
 
                 {/* ── Pie de Tarjeta: Integrantes a la Izquierda y Estado Activo a la Derecha ── */}
-                <div className="pt-3 border-t border-slate-800/60 flex items-center justify-between gap-3 w-full min-w-0">
+                <div className="pt-3 border-t border-[var(--border-color)] flex items-center justify-between gap-3 w-full min-w-0">
                     <div className="min-w-0">
                         <MemberAvatars members={group.members || []} extraMembers={group.extraMembers} />
                     </div>
                     
-                    <div className="flex items-center gap-1.5 shrink-0 text-slate-400">
+                    <div className="flex items-center gap-1.5 shrink-0 text-[var(--text-secondary)]">
                         <span className="relative flex h-2 w-2">
                             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
                             <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
                         </span>
-                        <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-secondary)]">
                             Activo ahora
                         </span>
                     </div>

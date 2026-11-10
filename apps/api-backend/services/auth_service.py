@@ -8,7 +8,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-SECRET_KEY = os.getenv("JWT_SECRET", "super_secure_jwt_secret_key_easypay_unach_2026_mvc")
+SECRET_KEY = os.getenv("JWT_SECRET") or os.getenv("SECRET_KEY", "easypay-ephemeral-secret-key-for-local-dev-only")
 ALGORITHM = os.getenv("ALGORITHM", "HS256")
 ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "15"))  # 15 minutos (tiempo corto según seguridad)
 REFRESH_TOKEN_EXPIRE_DAYS = int(os.getenv("REFRESH_TOKEN_EXPIRE_DAYS", "7"))      # 7 días

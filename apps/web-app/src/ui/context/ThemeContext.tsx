@@ -33,21 +33,26 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         const rootBody = window.document.body;
         const rootHtml = window.document.documentElement;
         
-        // 1. Limpiamos clases de color (añadimos pink aquí) y tamaño
+        // 1. Limpiamos clases de color y tamaño en HTML y BODY
         const themes = ['vibrant', 'serene', 'earth', 'pink', 'dark'];
         const sizes = ['font-small', 'font-medium', 'font-large'];
         
         rootBody.classList.remove(...themes, ...sizes);
-        rootHtml.classList.remove(...sizes);
+        rootHtml.classList.remove(...themes, ...sizes);
 
-        // 2. Aplicamos Modo Oscuro
+        // 2. Aplicamos Modo Oscuro a html y body (sincroniza Tailwind dark: y variables CSS)
         if (isDark) {
             rootBody.classList.add('dark');
+            rootHtml.classList.add('dark');
+        } else {
+            rootBody.classList.remove('dark');
+            rootHtml.classList.remove('dark');
         }
 
         // 3. Aplicamos Tema de Color
         if (colorTheme !== 'default') {
             rootBody.classList.add(colorTheme);
+            rootHtml.classList.add(colorTheme);
         }
 
         // 4. ESCALADO GLOBAL: Aplicamos al HTML y al BODY

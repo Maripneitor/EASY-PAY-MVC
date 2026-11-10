@@ -44,54 +44,92 @@ const AuthContext = createContext<AuthContextType | null>(null);
 // ─── Provider ─────────────────────────────────────────────────────────────────
 
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-    const [user, setUser] = useState<User | null>(null);
-    const [guest, setGuest] = useState<GuestSession | null>(null);
-    const [token, setToken] = useState<string | null>(null);
+    const [user, setUser] = useState<User | null>(() => authService.getStoredUser());
+    const [guest, setGuest] = useState<GuestSession | null>(() => {
+        try {
+            const stored = localStorage.getItem(STORAGE_KEYS.GUEST_SESSION);
+            return stored ? JSON.parse(stored) : null;
+        } catch {
+            return null;
+        }
+    });
+    const [token, setToken] = useState<string | null>(() => getAuthToken());
     const [isLoading, setIsLoading] = useState<boolean>(true);
     const [isAuthenticating, setIsAuthenticating] = useState<boolean>(false);
 
-    // ── Restore session from in-memory token or silent refresh on mount ─────────────
+    // ── Restore session from in-memory token, localStorage, or silent refresh on mount ──
     useEffect(() => {
-        const syncSession = async () => {
-            try {
-                const storedUser = authService.getStoredUser();
-                const storedGuest = localStorage.getItem(STORAGE_KEYS.GUEST_SESSION);
+        let isMounted = true;
 
-                if (storedUser) {
-                    setUser(storedUser);
-                    setGuest(null);
-                    // Si el token en memoria no está cargado (tras recarga F5), recuperarlo vía refresh cookie HttpOnly
-                    if (!getAuthToken()) {
-                        try {
-                            const freshUser = await authService.getCurrentUser();
-                            if (freshUser) {
-                                setUser(freshUser);
+        const syncSession = async () => {
+            setIsLoading(true);
+            try {
+                // 1. Obtener token y usuario almacenados (localStorage / memoria)
+                let currentToken = getAuthToken();
+                let storedUser = authService.getStoredUser();
+
+                // 2. Si no hay token de acceso, intentar recuperarlo vía refresh token en cookie HttpOnly
+                if (!currentToken) {
+                    try {
+                        const refreshRes = await authService.refreshToken();
+                        if (refreshRes?.access_token) {
+                            currentToken = refreshRes.access_token;
+                            setAuthToken(currentToken);
+                            if (refreshRes.user) {
+                                storedUser = refreshRes.user;
+                                authService.updateUserSession(storedUser);
                             }
-                        } catch {
-                            // Si la sesión expiró completamente
                         }
+                    } catch {
+                        // Refresh token expirado o no presente
                     }
-                    setToken(getAuthToken());
-                } else if (storedGuest) {
-                    setUser(null);
-                    setToken(null);
-                    setGuest(JSON.parse(storedGuest));
-                } else {
+                }
+
+                // 3. Si el token está presente, asegurar sincronización de perfil y roles
+                if (currentToken && isMounted) {
+                    setToken(currentToken);
+                    if (storedUser) {
+                        setUser(storedUser);
+                        setGuest(null);
+                    }
+                    try {
+                        const freshUser = await authService.getCurrentUser();
+                        if (freshUser && isMounted) {
+                            setUser(freshUser);
+                            setGuest(null);
+                        }
+                    } catch {
+                        // Si falla la red temporalmente pero storedUser existe, mantenemos storedUser
+                    }
+                } else if (isMounted) {
+                    // 4. Si no hay sesión de usuario, verificar sesión de invitado
+                    const storedGuest = localStorage.getItem(STORAGE_KEYS.GUEST_SESSION);
+                    if (storedGuest) {
+                        setUser(null);
+                        setToken(null);
+                        setGuest(JSON.parse(storedGuest));
+                    } else {
+                        setUser(null);
+                        setToken(null);
+                        setGuest(null);
+                    }
+                }
+            } catch (err) {
+                console.warn('[AuthContext] Error sincronizando sesión:', err);
+                if (isMounted) {
                     setUser(null);
                     setToken(null);
                     setGuest(null);
                 }
-            } catch {
-                setUser(null);
-                setToken(null);
-                setGuest(null);
             } finally {
-                setIsLoading(false);
+                if (isMounted) {
+                    setIsLoading(false);
+                }
             }
         };
 
         const handleStorageChange = (e: StorageEvent) => {
-            if (e.key === STORAGE_KEYS.AUTH_USER || e.key === STORAGE_KEYS.GUEST_SESSION) {
+            if (e.key === STORAGE_KEYS.AUTH_USER || e.key === STORAGE_KEYS.GUEST_SESSION || e.key === STORAGE_KEYS.AUTH_TOKEN) {
                 syncSession();
             }
         };
@@ -99,7 +137,10 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         syncSession();
         window.addEventListener('storage', handleStorageChange);
         
-        return () => window.removeEventListener('storage', handleStorageChange);
+        return () => {
+            isMounted = false;
+            window.removeEventListener('storage', handleStorageChange);
+        };
     }, []);
 
     // ── Auth methods ───────────────────────────────────────────────────────────
@@ -178,8 +219,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
     const refreshUserPermissions = useCallback(async (): Promise<void> => {
         const storedUser = authService.getStoredUser();
-        const storedToken = localStorage.getItem(STORAGE_KEYS.AUTH_TOKEN);
-        if (!storedToken || !storedUser?.id) return;
+        const currentToken = getAuthToken();
+        if (!currentToken || !storedUser?.id) return;
 
         try {
             // Consultar datos y permisos en tiempo real desde el backend
@@ -249,7 +290,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         token,
         isLoading,
         isAuthenticating,
-        isAuthenticated: !!(user || guest),
+        isAuthenticated: Boolean((user && (token || getAuthToken())) || guest),
         isGuest: !user && !!guest,
         loginWithGoogle,
         loginWithEmail,

@@ -55,7 +55,7 @@ async def get_current_user_with_permissions(claims: Dict[str, Any] = Depends(get
         user_roles = ["Usuario Regular"]
 
     # Blindaje inmutable permanente para el superadministrador
-    superadmin_email = (os.getenv("SUPERADMIN_EMAIL") or "mariomoguel05@gmail.com").strip().lower()
+    superadmin_email = (os.getenv("SUPERADMIN_EMAIL") or "admin@easypay.com").strip().lower()
     admin_emails = {superadmin_email} | {
         e.strip().lower() for e in os.getenv("ADMIN_EMAILS", "").split(",") if e.strip()
     }

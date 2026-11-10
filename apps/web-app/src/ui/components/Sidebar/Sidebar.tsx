@@ -91,8 +91,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, onLogout, use
 
             {/* Sidebar / Off-canvas Drawer */}
             <aside className={cn(
-                // Base: flex-col, bg oscuro #0f172a / tokens, transición GPU fluida en transform
-                "flex flex-col h-screen bg-[#0f172a] border-r border-slate-800 text-slate-100 overflow-hidden transition-transform duration-250 ease-out",
+                // Base: flex-col, bg semántico, transición GPU fluida en transform
+                "flex flex-col h-screen bg-[var(--bg-sidebar)] border-r border-[var(--border-color)] text-[var(--text-primary)] overflow-hidden transition-all duration-200 ease-out",
                 // Móvil (< md): Off-canvas flotante estricto
                 "fixed inset-y-0 left-0 z-50 w-72 transform -translate-x-full md:translate-x-0 md:relative",
                 isOpen 
@@ -107,7 +107,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, onLogout, use
                     onClick={onClose}
                     aria-label={isOpen ? I18N_TEXTS.COLLAPSE_MENU : I18N_TEXTS.EXPAND_MENU}
                     className={cn(
-                        "absolute p-2.5 hover:bg-slate-800/80 hover:text-white rounded-xl text-slate-400 z-[60] active:scale-95 transition-transform duration-150 ease-out cursor-pointer",
+                        "absolute p-2.5 hover:bg-[var(--hover-bg)] hover:text-[var(--text-primary)] rounded-xl text-[var(--text-secondary)] z-[60] active:scale-95 transition-colors duration-150 ease-out cursor-pointer",
                         "md:flex items-center justify-center",
                         isOpen ? "flex right-4 top-6" : "hidden md:flex left-1/2 -translate-x-1/2 top-6"
                     )}
@@ -167,7 +167,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, onLogout, use
                     "md:opacity-100 md:pointer-events-auto",
                     !isOpen && "md:px-4"
                 )}>
-                    {isOpen && <p className="px-4 mb-2 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">{I18N_TEXTS.MAIN_MENU_TITLE}</p>}
+                    {isOpen && <p className="px-4 mb-2 text-[10px] font-bold text-[var(--text-secondary)] uppercase tracking-[0.2em]">{I18N_TEXTS.MAIN_MENU_TITLE}</p>}
                     {menuItems.map((item) => {
                         const isActive = location.pathname === item.path;
                         return (
@@ -179,8 +179,10 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, onLogout, use
                                 }}
                                 title={!isOpen ? item.label : ''}
                                 className={cn(
-                                    "w-full flex items-center rounded-2xl text-sm font-bold transition-colors duration-150 relative group active:scale-[0.98]",
-                                    isActive ? "text-[var(--primary)] bg-[var(--hover-bg)]" : "text-slate-400 hover:text-white hover:bg-[var(--hover-bg)]",
+                                    "w-full flex items-center rounded-2xl text-sm font-semibold transition-colors duration-150 relative group active:scale-[0.98]",
+                                    isActive 
+                                        ? "text-[var(--primary)] bg-[var(--primary-subtle)] border border-[var(--primary-border)]" 
+                                        : "text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--hover-bg)]",
                                     isOpen ? "px-4 py-2.5 justify-between" : "p-0 justify-center",
                                     !isOpen && "md:p-3"
                                 )}
@@ -190,7 +192,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, onLogout, use
                                     {isOpen && <span>{item.label}</span>}
                                 </div>
                                 {!isOpen && (
-                                    <div className="absolute left-full ml-4 px-3 py-2 bg-black text-white text-[10px] font-black uppercase tracking-widest rounded-lg opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity z-[100] whitespace-nowrap shadow-xl md:block hidden">
+                                    <div className="absolute left-full ml-4 px-3 py-2 bg-[var(--bg-surface)] border border-[var(--border-color)] text-[var(--text-primary)] text-[10px] font-bold uppercase tracking-widest rounded-lg opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity z-[100] whitespace-nowrap shadow-xl md:block hidden">
                                         {item.label}
                                     </div>
                                 )}
@@ -235,7 +237,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, onLogout, use
                     </button>
 
                     {isOpen && (
-                        <div className="pt-4 pb-2 text-center text-[10px] font-black font-mono text-slate-400 opacity-50">
+                        <div className="pt-4 pb-2 text-center text-[10px] font-bold font-mono text-[var(--text-secondary)] opacity-60">
                             {I18N_TEXTS.VERSION}
                         </div>
                     )}

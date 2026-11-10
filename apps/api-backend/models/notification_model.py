@@ -39,7 +39,10 @@ class NotificationModel(BaseRepository):
         return str(result.inserted_id)
 
     async def get_user_notifications(self, user_id: str, unread_only: bool = False, limit: int = 50) -> List[Dict[str, Any]]:
-        query: Dict[str, Any] = {"user_id": user_id}
+        user_match = [str(user_id)]
+        if self.is_valid_id(user_id):
+            user_match.append(self.to_object_id(user_id))
+        query: Dict[str, Any] = {"user_id": {"$in": user_match}}
         if unread_only:
             query["read"] = False
         cursor = self.collection.find(query).sort("created_at", -1).limit(limit)
@@ -52,18 +55,36 @@ class NotificationModel(BaseRepository):
     async def mark_as_read(self, notif_id: str, user_id: str) -> bool:
         if not self.is_valid_id(notif_id):
             return False
+        user_match = [str(user_id)]
+        if self.is_valid_id(user_id):
+            user_match.append(self.to_object_id(user_id))
         result = await self.collection.update_one(
-            {"_id": self.to_object_id(notif_id), "user_id": user_id},
+            {"_id": self.to_object_id(notif_id), "user_id": {"$in": user_match}},
             {"$set": {"read": True}}
         )
         return result.modified_count > 0
 
     async def mark_all_as_read(self, user_id: str) -> int:
+        user_match = [str(user_id)]
+        if self.is_valid_id(user_id):
+            user_match.append(self.to_object_id(user_id))
         result = await self.collection.update_many(
-            {"user_id": user_id, "read": False},
+            {"user_id": {"$in": user_match}, "read": False},
             {"$set": {"read": True}}
         )
         return result.modified_count
+
+    async def delete_notification(self, notif_id: str, user_id: str) -> bool:
+        if not self.is_valid_id(notif_id):
+            return False
+        user_match = [str(user_id)]
+        if self.is_valid_id(user_id):
+            user_match.append(self.to_object_id(user_id))
+        result = await self.collection.delete_one({
+            "_id": self.to_object_id(notif_id),
+            "user_id": {"$in": user_match}
+        })
+        return result.deleted_count > 0
 
     # --- Deudas y Recordatorios ---
     async def create_debt(self, debt_data: Dict[str, Any]) -> str:

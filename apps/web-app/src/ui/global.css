@@ -5,108 +5,123 @@
 @tailwind utilities;
 
 :root {
-    /* Brand Colors Originales */
-    --cobalt-blue: #0D47A1;
-    --ocean-deep: #1565C0;
-    --brilliant-azure: #1E88E5;
-    --alice-blue: #E3F2FD;
-    --dodger-blue: #2196F3;
-    --sky-blue: #90CAF9;
-    --cool-sky: #64B5F6;
-    --primary: #2196F3;
-    --neon-violet: #a855f7;
-
-    /* Semantic Colors - Light Mode Default */
-    --bg-body: #E3F2FD;
-    --bg-card: #FFFFFF;
-    --bg-sidebar: #FFFFFF;
+    /* ─── Semantic Tokens: Light Mode (FinTech Clean) ─── */
+    --bg-body: #f8fafc;
+    --bg-surface: #ffffff;
+    --bg-card: #ffffff;
+    --bg-sidebar: #ffffff;
+    --bg-surface-muted: #f1f5f9;
     --text-primary: #0f172a;
     --text-secondary: #475569;
-    --border-color: #BBDEFB;
-    --glass-bg: rgba(255, 255, 255, 0.7);
-    --header-bg: rgba(255, 255, 255, 0.85);
-    --hover-bg: #f1f5f9;
+    --border-color: #e2e8f0;
+    --border-subtle: rgba(15, 23, 42, 0.06);
+    --glass-bg: rgba(255, 255, 255, 0.85);
+    --header-bg: rgba(255, 255, 255, 0.9);
+    --hover-bg: rgba(15, 23, 42, 0.035);
 
-    /* Input Colors */
-    --input-bg: #FFFFFF;
-    --input-border: #E2E8F0;
-    --input-text: #0F172A;
+    /* Primary FinTech Palette (Refined Indigo) */
+    --primary: #4f46e5;
+    --primary-subtle: rgba(79, 70, 229, 0.08);
+    --primary-border: rgba(79, 70, 229, 0.2);
+    --primary-foreground: #ffffff;
+
+    /* Form Inputs */
+    --input-bg: #ffffff;
+    --input-border: #e2e8f0;
+    --input-text: #0f172a;
+
+    /* Role Pills Tokens */
+    --badge-admin-bg: rgba(99, 102, 241, 0.08);
+    --badge-admin-text: #4338ca;
+    --badge-admin-border: rgba(99, 102, 241, 0.2);
+
+    --badge-editor-bg: rgba(16, 185, 129, 0.08);
+    --badge-editor-text: #065f46;
+    --badge-editor-border: rgba(16, 185, 129, 0.2);
+
+    --badge-regular-bg: rgba(100, 116, 139, 0.08);
+    --badge-regular-text: #475569;
+    --badge-regular-border: rgba(100, 116, 139, 0.2);
 }
 
-/* --- 1. MODO OSCURO BASE --- */
+/* ─── 1. MODO OSCURO (FinTech Obsidian Slate) ─── */
+/* Evita negros 100% quemados; utiliza pizarra profunda con bordes hiper-sutiles */
 .dark {
-    --bg-body: #0f172a;
-    --bg-card: #1e293b;
-    --bg-sidebar: #0f172a;
+    --bg-body: #0a0e17;
+    --bg-surface: #111827;
+    --bg-card: #111827;
+    --bg-sidebar: #0a0e17;
+    --bg-surface-muted: rgba(255, 255, 255, 0.03);
     --text-primary: #f8fafc;
     --text-secondary: #94a3b8;
-    --border-color: rgba(255, 255, 255, 0.1);
-    --glass-bg: rgba(30, 41, 59, 0.7);
-    --header-bg: rgba(15, 23, 42, 0.8);
-    --hover-bg: rgba(255, 255, 255, 0.05);
-    --primary: #38bdf8;
-    --input-bg: rgba(15, 23, 42, 0.6);
+    --border-color: rgba(255, 255, 255, 0.08);
+    --border-subtle: rgba(255, 255, 255, 0.04);
+    --glass-bg: rgba(17, 24, 39, 0.85);
+    --header-bg: rgba(10, 14, 23, 0.85);
+    --hover-bg: rgba(255, 255, 255, 0.025);
+
+    /* Primary FinTech Palette (Soft Non-glare Indigo) */
+    --primary: #6366f1;
+    --primary-subtle: rgba(99, 102, 241, 0.12);
+    --primary-border: rgba(99, 102, 241, 0.25);
+    --primary-foreground: #ffffff;
+
+    /* Form Inputs */
+    --input-bg: rgba(17, 24, 39, 0.7);
     --input-border: rgba(255, 255, 255, 0.1);
-    --input-text: #F8FAFC;
+    --input-text: #f8fafc;
+
+    /* Role Pills Tokens (Fórmula de Opacidad: 10-15% con texto 300/400) */
+    --badge-admin-bg: rgba(99, 102, 241, 0.12);
+    --badge-admin-text: #a5b4fc;
+    --badge-admin-border: rgba(99, 102, 241, 0.25);
+
+    --badge-editor-bg: rgba(16, 185, 129, 0.12);
+    --badge-editor-text: #6ee7b7;
+    --badge-editor-border: rgba(16, 185, 129, 0.25);
+
+    --badge-regular-bg: rgba(148, 163, 184, 0.1);
+    --badge-regular-text: #cbd5e1;
+    --badge-regular-border: rgba(148, 163, 184, 0.2);
 }
 
-/* --- 2. TEMA ROJO (Vibrant) --- */
+/* ─── Temas de Acento Opcionales en Modo Oscuro ─── */
 .dark.vibrant {
-    --bg-body: #1a0a0a;
-    --bg-card: #2d1212;
-    --bg-sidebar: #1a0a0a;
-    --primary: #f87171;
-    --border-color: rgba(248, 113, 113, 0.2);
-    --header-bg: rgba(26, 10, 10, 0.85);
+    --bg-body: #120a0e;
+    --bg-card: #1c1017;
+    --bg-sidebar: #120a0e;
+    --primary: #f43f5e;
+    --border-color: rgba(244, 63, 94, 0.15);
 }
 
-/* --- 3. TEMA VERDE (Serene) --- */
 .dark.serene {
-    --bg-body: #051a14;
-    --bg-card: #0a2e24;
-    --bg-sidebar: #051a14;
-    --primary: #34d399;
-    --border-color: rgba(52, 211, 153, 0.2);
-    --header-bg: rgba(5, 26, 20, 0.85);
+    --bg-body: #071311;
+    --bg-card: #0d201c;
+    --bg-sidebar: #071311;
+    --primary: #10b981;
+    --border-color: rgba(16, 185, 129, 0.15);
 }
 
-/* --- 4. TEMA TIERRA (Earth) --- */
 .dark.earth {
-    --bg-body: #17120a;
-    --bg-card: #261e12;
-    --bg-sidebar: #17120a;
-    --primary: #fbbf24;
-    --border-color: rgba(251, 191, 36, 0.2);
-    --header-bg: rgba(23, 18, 10, 0.85);
+    --bg-body: #14110a;
+    --bg-card: #1f1b12;
+    --bg-sidebar: #14110a;
+    --primary: #f59e0b;
+    --border-color: rgba(245, 158, 11, 0.15);
 }
 
-/* --- 5. TEMA ROSA (Pink / Lomecan) --- */
 .dark.pink {
-    --bg-body: #1a0a14;      /* Fondo negro con matiz violeta/rosa */
-    --bg-card: #2d1222;      /* Cards un poco más claras */
-    --bg-sidebar: #1a0a14;
-    --primary: #ff4081;      /* Rosa vibrante */
-    --border-color: rgba(255, 64, 129, 0.2);
-    --header-bg: rgba(26, 10, 20, 0.85);
+    --bg-body: #140a12;
+    --bg-card: #20111d;
+    --bg-sidebar: #140a12;
+    --primary: #ec4899;
+    --border-color: rgba(236, 72, 153, 0.15);
 }
 
-/* REGLA DE BORDES Y FONDOS ADAPTABLES */
-[class*="rounded-2xl"]:not(button):not(.payment-card) {
-    border: 1.5px solid var(--border-color) !important;
-    background-color: var(--bg-card) !important;
-    transition: all 0.3s ease;
-}
-
-/* Color de Iconos */
-svg:not(.payment-card-icon) {
-    color: var(--primary) !important;
-    transition: color 0.3s ease;
-}
-
-/* CORRECCIÓN FLASH BLANCO: Forzamos el color de fondo desde el HTML */
+/* Corrección de parpadeo y configuraciones base */
 html {
-    background-color: var(--bg-body) !important;
-    transition: font-size 0.3s ease-in-out, background-color 0.3s ease;
+    background-color: var(--bg-body);
+    transition: background-color 0.25s ease;
 }
 
 body {
@@ -116,7 +131,7 @@ body {
     font-family: 'Inter', sans-serif;
     color: var(--text-primary);
     overflow-x: hidden;
-    transition: background-color 0.3s ease, color 0.3s ease, font-size 0.3s ease;
+    transition: background-color 0.25s ease, color 0.25s ease;
 }
 
 /* --- ANIMACIONES MANTENIDAS --- */
@@ -136,41 +151,15 @@ body {
 .animate-item-right { animation: item-separate-right 4s ease-out infinite; animation-fill-mode: forwards; }
 .animate-item-center { animation: item-separate-center 4s ease-out infinite; animation-fill-mode: forwards; }
 
-/* Limpieza de fondos y textos para temas oscuros y personalizados */
-.dark, .vibrant, .serene, .earth, .pink {
-    [class*="bg-white"]:not(.payment-card), 
-    [class*="bg-slate-"]:not(.payment-card), 
-    [class*="bg-gray-"]:not(.payment-card), 
-    [class*="border-slate-"]:not(.payment-card), 
-    [class*="border-gray-"]:not(.payment-card), 
-    header[class*="header"], 
-    div[class*="bg-gray-50"]:not(.payment-card) {
-        background-color: var(--bg-card) !important;
-        border-color: var(--border-color) !important;
-    }
-
-    [class*="text-slate-"]:not(.payment-card), 
-    [class*="text-gray-"]:not(.payment-card), 
-    [class*="text-zinc-"]:not(.payment-card) {
-        color: var(--text-secondary) !important;
-    }
-
-    h1, h2, h3, h4, span[class*="font-bold"], p[class*="font-bold"] {
-        color: var(--text-primary) !important;
-    }
-}
-
 /* --- LOGICA DE ESCALADO GLOBAL --- */
 html.font-small { font-size: 14px !important; }
 html.font-medium { font-size: 16px !important; }
 html.font-large { font-size: 20px !important; }
 
-/* --- SCROLL ADAPTABLE SOLO EN MODO GRANDE PARA LA CLASE ESPECIFICA --- */
 html.font-large .custom-scrollbar {
     overflow-y: auto !important;
 }
 
-/* Estilo de la barra solo para la zona de menú */
 .custom-scrollbar::-webkit-scrollbar {
     width: 4px;
 }
@@ -184,16 +173,15 @@ html.font-large .custom-scrollbar {
     background: transparent;
 }
 
-/* Asegurar que el scroll no atraviese todo el sidebar */
 html.font-large aside {
     overflow: hidden !important;
 }
 
-/* ═══ Custom Utilities ═══ */
+/* Custom Utilities */
 .no-scrollbar::-webkit-scrollbar {
     display: none;
 }
 .no-scrollbar {
     -ms-overflow-style: none;
     scrollbar-width: none;
-}
+}

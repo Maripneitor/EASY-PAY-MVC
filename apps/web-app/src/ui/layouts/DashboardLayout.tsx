@@ -42,12 +42,12 @@ export const DashboardLayout = () => {
     };
 
     return (
-        <div className="min-h-screen bg-[#0b0f19] text-[var(--text-primary)] flex flex-col md:flex-row overflow-hidden font-display">
+        <div className="min-h-screen bg-[var(--bg-body)] text-[var(--text-primary)] flex flex-col md:flex-row overflow-hidden font-display transition-colors duration-200">
             {/* Header Móvil Superior (Completamente independiente del sidebar, visible solo en móvil) */}
-            <header className="w-full h-16 bg-[#0f172a] border-b border-slate-800 flex items-center justify-between px-4 z-40 md:hidden shrink-0">
+            <header className="w-full h-16 bg-[var(--bg-surface)] border-b border-[var(--border-color)] flex items-center justify-between px-4 z-40 md:hidden shrink-0 transition-colors duration-200">
                 <button
                     onClick={toggleSidebar}
-                    className="flex items-center justify-center w-10 h-10 text-slate-200 hover:text-white hover:bg-slate-800/80 rounded-xl transition-colors"
+                    className="flex items-center justify-center w-10 h-10 text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--hover-bg)] rounded-xl transition-colors"
                     aria-label="Abrir menú de navegación"
                 >
                     <Menu size={22} strokeWidth={2.5} />
@@ -55,7 +55,7 @@ export const DashboardLayout = () => {
 
                 <div className="flex items-center gap-2">
                     <img src="/assets/images/logo-ep.png" alt="Easy-Pay" className="w-7 h-7 object-contain" />
-                    <span className="font-black text-base tracking-tight text-white">Easy-Pay</span>
+                    <span className="font-black text-base tracking-tight text-[var(--text-primary)]">Easy-Pay</span>
                 </div>
 
                 <div className="flex items-center">

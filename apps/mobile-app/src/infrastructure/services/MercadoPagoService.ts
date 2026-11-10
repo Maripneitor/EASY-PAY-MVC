@@ -1,6 +1,6 @@
 // ─── Configuración ───────────────────────────────────────────────────────────
-const MP_PUBLIC_KEY = 'TEST-999731aa-b864-4ad0-b011-0cc5777a8779';
-const MP_ACCESS_TOKEN = 'TEST-2534982372409312-042803-becc4ab738ab8959dd28ce2a02faffb0-132798166';
+const MP_PUBLIC_KEY = process.env.EXPO_PUBLIC_MP_PUBLIC_KEY || '';
+const MP_ACCESS_TOKEN = process.env.EXPO_PUBLIC_MP_ACCESS_TOKEN || '';
 const MP_API = 'https://api.mercadopago.com';
 
 export type MPPaymentMethod = 'card' | 'oxxo' | 'spei';

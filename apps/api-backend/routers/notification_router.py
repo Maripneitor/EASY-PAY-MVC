@@ -31,10 +31,18 @@ async def mark_as_read(notif_id: str, current_user_id: str = Depends(get_current
     return result
 
 @notification_router.patch("/user/{user_id}/read-all")
+@notification_router.patch("/{user_id}/read-all")
 async def mark_all_as_read(user_id: str, current_user_id: str = Depends(get_current_user_id)):
     if user_id != current_user_id:
         raise HTTPException(status_code=403, detail="No autorizado")
     return await controller.mark_all_read(user_id)
+
+@notification_router.delete("/{notif_id}")
+async def delete_notification(notif_id: str, current_user_id: str = Depends(get_current_user_id)):
+    result = await controller.delete_notification(notif_id, current_user_id)
+    if controller.is_error(result):
+        raise HTTPException(status_code=404, detail=result.get("message"))
+    return result
 
 @notification_router.post("/debts")
 async def create_debt(data: DebtCreate):

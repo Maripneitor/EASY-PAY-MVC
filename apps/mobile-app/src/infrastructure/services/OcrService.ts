@@ -1,7 +1,7 @@
 import * as ImagePicker from 'expo-image-picker';
 import * as ImageManipulator from 'expo-image-manipulator';
 
-const OCR_API_KEY = 'K88694858788957';
+const OCR_API_KEY = process.env.EXPO_PUBLIC_OCR_API_KEY || '';
 
 export interface TicketItem {
     name: string;

@@ -32,6 +32,12 @@ class NotificationController(BaseController):
         count = await self._model.mark_all_as_read(user_id)
         return self.success(f"{count} notificaciones marcadas como leídas")
 
+    async def delete_notification(self, notif_id: str, user_id: str) -> Dict[str, Any]:
+        success = await self._model.delete_notification(notif_id, user_id)
+        if success:
+            return self.success("Notificación eliminada correctamente")
+        return self.error("No se pudo eliminar la notificación", code="NOT_FOUND")
+
     async def create_debt(self, data: DebtCreate) -> Dict[str, Any]:
         debt_dict = data.dict()
         debt_id = await self._model.create_debt(debt_dict)

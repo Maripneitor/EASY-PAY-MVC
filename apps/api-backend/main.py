@@ -20,6 +20,7 @@ from routers import (
 )
 from models.role_model import RoleModel
 from core.rbac_middleware import RBACAuthorizationMiddleware
+from core.cors_config import get_allowed_cors_origins, get_allowed_cors_headers
 
 logger = logging.getLogger("EasyPayAPI")
 logging.basicConfig(
@@ -36,29 +37,16 @@ app = FastAPI(
 )
 
 # ── Configuración Segura de CORS ──────────────────────────────────────────────
-# Solo orígenes explícitamente autorizados
-raw_origins = os.getenv("ALLOWED_ORIGINS", "")
-custom_origins = [o.strip() for o in raw_origins.split(",") if o.strip()]
-
-default_origins = [
-    "http://localhost:5173",
-    "http://127.0.0.1:5173",
-    "http://localhost:5174",
-    "http://127.0.0.1:5174",
-    "http://localhost:3000",
-    "http://127.0.0.1:3000",
-    "http://localhost:8000",
-    "https://localhost:5173",
-]
-
-allowed_origins = list(set(default_origins + custom_origins))
+# Solo orígenes y encabezados explícitamente autorizados
+allowed_origins = get_allowed_cors_origins()
+allowed_headers = get_allowed_cors_headers()
 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=allowed_origins,
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-    allow_headers=["Authorization", "Content-Type", "Accept", "X-Requested-With"],
+    allow_headers=allowed_headers,
 )
 
 app.add_middleware(RBACAuthorizationMiddleware)

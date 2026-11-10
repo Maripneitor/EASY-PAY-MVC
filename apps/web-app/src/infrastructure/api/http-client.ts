@@ -1,11 +1,14 @@
 import axios, { AxiosInstance, InternalAxiosRequestConfig, AxiosResponse, AxiosError } from 'axios';
 import { STORAGE_KEYS } from '../localStorage/storage-keys';
 
-// ─── Token helpers in-memory (Blindaje estricto contra ataques XSS) ───────────
+// ─── Token helpers in-memory y persistencia segura de sesión ─────────────────
 let inMemoryAccessToken: string | null = null;
 
 export const setAuthToken = (token: string): void => {
     inMemoryAccessToken = token;
+    try {
+        localStorage.setItem(STORAGE_KEYS.AUTH_TOKEN, token);
+    } catch {}
 };
 
 export const clearAuthToken = (): void => {
@@ -16,7 +19,15 @@ export const clearAuthToken = (): void => {
 };
 
 export const getAuthToken = (): string | null => {
-    return inMemoryAccessToken;
+    if (inMemoryAccessToken) return inMemoryAccessToken;
+    try {
+        const stored = localStorage.getItem(STORAGE_KEYS.AUTH_TOKEN);
+        if (stored) {
+            inMemoryAccessToken = stored;
+            return stored;
+        }
+    } catch {}
+    return null;
 };
 
 // ─── Axios instance ───────────────────────────────────────────────────────────

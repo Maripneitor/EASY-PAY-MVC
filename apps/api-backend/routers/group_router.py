@@ -128,16 +128,21 @@ async def reject_group_invitation(
     invitation_id: str,
     user: dict = Depends(get_current_user_with_permissions)
 ):
-    current_user_id = user["id"]
-    current_user_email = user.get("email")
-    result = await controller.reject_invitation(invitation_id, current_user_id, current_user_email)
-    if controller.is_error(result):
-        code = result.get("code")
-        status_code = 404 if code == "NOT_FOUND" else (
-            403 if code == "FORBIDDEN" else 400
-        )
-        raise HTTPException(status_code=status_code, detail=result.get("message"))
-    return result
+    try:
+        current_user_id = user["id"]
+        current_user_email = user.get("email")
+        result = await controller.reject_invitation(invitation_id, current_user_id, current_user_email)
+        if controller.is_error(result):
+            code = result.get("code")
+            status_code = 404 if code == "NOT_FOUND" else (
+                403 if code == "FORBIDDEN" else 400
+            )
+            raise HTTPException(status_code=status_code, detail=result.get("message"))
+        return result
+    except HTTPException:
+        raise
+    except Exception:
+        raise HTTPException(status_code=500, detail="Error interno al procesar el rechazo de la invitación")
 
 @group_router.delete("/invitations/{invitation_id}", dependencies=[Depends(require_permission("groups:write"))])
 @group_router.post("/invitations/{invitation_id}/cancel", dependencies=[Depends(require_permission("groups:write"))])

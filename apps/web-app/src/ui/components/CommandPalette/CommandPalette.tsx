@@ -1,11 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, Users, BarChart3, User, X } from 'lucide-react';
+import { Search, Users, BarChart3, User, X, ShieldAlert } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { groupRepository } from '../../../infrastructure/api/repositories';
 import { ROUTES } from '../../../infrastructure/routes';
+import { usePermissions } from '../../hooks/usePermissions';
 
 export const CommandPalette: React.FC = () => {
+    const { isAdmin } = usePermissions();
     const [isOpen, setIsOpen] = useState(false);
     const [query, setQuery] = useState('');
     const [results, setResults] = useState<any[]>([]);
@@ -136,6 +138,18 @@ export const CommandPalette: React.FC = () => {
                                             </div>
                                             <span className="ml-auto text-[10px] font-bold text-slate-400 opacity-0 group-hover:opacity-100 transition-opacity">P</span>
                                         </button>
+                                        {isAdmin && (
+                                            <button onClick={() => handleSelect(ROUTES.ADMIN)} className="w-full flex items-center gap-3 px-3 py-3 rounded-xl hover:bg-[var(--hover-bg)] transition-colors group">
+                                                <div className="w-8 h-8 rounded-lg bg-amber-500/10 flex items-center justify-center text-amber-500">
+                                                    <ShieldAlert size={18} />
+                                                </div>
+                                                <div className="flex flex-col items-start">
+                                                    <span className="text-sm font-bold text-[var(--text-primary)]">Administración</span>
+                                                    <span className="text-[10px] text-slate-500">Control de acceso y auditoría</span>
+                                                </div>
+                                                <span className="ml-auto text-[10px] font-bold text-slate-400 opacity-0 group-hover:opacity-100 transition-opacity">A</span>
+                                            </button>
+                                        )}
                                     </div>
                                 </div>
                             )}

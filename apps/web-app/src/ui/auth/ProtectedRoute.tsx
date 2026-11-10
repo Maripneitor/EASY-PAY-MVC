@@ -8,7 +8,7 @@ import { useRef } from 'react';
 
 export const ProtectedRoute = () => {
     const { isAuthenticated, isLoading } = useAuthContext();
-    const { isAdmin, canWriteExpenses } = usePermissions();
+    const { isAdmin, canWriteExpenses, canWriteGroups, canViewStats } = usePermissions();
     const token = getAuthToken();
     const tempUserId = localStorage.getItem('temp_userId');
     const location = useLocation();
@@ -20,8 +20,16 @@ export const ProtectedRoute = () => {
         return <Outlet />;
     }
 
+    // Mientras se restaura e hidrata la sesión (JWT de localStorage o cookie), no expulsar al usuario
     if (isLoading) {
-        return null;
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-[var(--bg-body)]">
+                <div className="flex flex-col items-center gap-3">
+                    <div className="w-8 h-8 border-3 border-indigo-500/20 border-t-indigo-600 rounded-full animate-spin" />
+                    <span className="text-xs font-mono text-slate-400">Verificando sesión...</span>
+                </div>
+            </div>
+        );
     }
 
     // 2. Si no esta autenticado, redirigir al login
@@ -29,26 +37,43 @@ export const ProtectedRoute = () => {
         return <Navigate to={ROUTES.AUTH} replace state={{ from: location.pathname }} />;
     }
 
-    // 3. Control de acceso para Dashboard de Administracion
+    // 3. Navigation Guard: Control de acceso para Dashboard de Administración
     if (location.pathname === ROUTES.ADMIN && !isAdmin) {
         if (lastDeniedPathRef.current !== location.pathname) {
             lastDeniedPathRef.current = location.pathname;
-            toast.error('Acceso denegado: Se requiere rol de Administrador.');
+            toast.error('Acceso denegado: Se requiere rol de Administrador para acceder al panel de control.');
         }
         return <Navigate to={ROUTES.DASHBOARD} replace />;
     }
 
-    // 4. Control de acceso para Registrar / Editar Gastos (expenses:write)
+    // 4. Navigation Guard: Control de acceso para Registrar / Editar Gastos (expenses:write)
     const isExpenseWriteRoute = location.pathname.includes('/registrar-gasto') || location.pathname.includes('/editar-item');
     if (isExpenseWriteRoute && !canWriteExpenses) {
         if (lastDeniedPathRef.current !== location.pathname) {
             lastDeniedPathRef.current = location.pathname;
-            toast.error('Acceso denegado: Tu rol es de solo lectura y no permite registrar ni editar gastos.');
+            toast.error('Acceso denegado: Tu rol actual no cuenta con permiso para registrar o editar gastos.');
         }
-        // Extraer groupId para volver al detalle del grupo si es posible
         const match = location.pathname.match(/\/grupo\/([^\/]+)/);
         const redirectTarget = match ? `/grupo/${match[1]}` : ROUTES.DASHBOARD;
         return <Navigate to={redirectTarget} replace />;
+    }
+
+    // 5. Navigation Guard: Control de acceso para Crear Grupos (groups:write)
+    if (location.pathname === ROUTES.CREATE_GROUP && !canWriteGroups) {
+        if (lastDeniedPathRef.current !== location.pathname) {
+            lastDeniedPathRef.current = location.pathname;
+            toast.error('Acceso denegado: Tu rol actual no cuenta con permiso para crear nuevos grupos.');
+        }
+        return <Navigate to={ROUTES.GROUPS} replace />;
+    }
+
+    // 6. Navigation Guard: Control de acceso para Estadísticas (stats:read)
+    if (location.pathname === ROUTES.STATS && !canViewStats) {
+        if (lastDeniedPathRef.current !== location.pathname) {
+            lastDeniedPathRef.current = location.pathname;
+            toast.error('Acceso denegado: Tu rol actual no cuenta con permiso para consultar métricas y estadísticas.');
+        }
+        return <Navigate to={ROUTES.DASHBOARD} replace />;
     }
 
     return <Outlet />;

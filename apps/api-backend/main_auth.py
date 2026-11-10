@@ -3,19 +3,22 @@ from fastapi.middleware.cors import CORSMiddleware
 from routers.user_router import user_router 
 from routers.admin_router import admin_router
 from models.role_model import RoleModel
-from core.cors_config import get_allowed_cors_origins
+from core.cors_config import get_allowed_cors_origins, get_allowed_cors_headers
+from core.rbac_middleware import RBACAuthorizationMiddleware
 import logging
 
 app = FastAPI(title="Easy-Pay Auth/User Service (OOP-MVC)", version="2.0.0")
 origins = get_allowed_cors_origins()
+allowed_headers = get_allowed_cors_headers()
 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-    allow_headers=["*"],
+    allow_headers=allowed_headers,
 )
+app.add_middleware(RBACAuthorizationMiddleware)
 
 app.include_router(user_router)
 app.include_router(admin_router)

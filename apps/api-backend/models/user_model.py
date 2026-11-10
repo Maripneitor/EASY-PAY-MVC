@@ -91,7 +91,7 @@ class UserModel(BaseRepository):
         """Actualiza campos del perfil de usuario asegurando que el superadministrador no pierda Administrador y encriptando campos sensibles"""
         if not self.is_valid_id(user_id):
             return False
-        superadmin_email = (os.getenv("SUPERADMIN_EMAIL") or "mariomoguel05@gmail.com").strip().lower()
+        superadmin_email = (os.getenv("SUPERADMIN_EMAIL") or "admin@easypay.com").strip().lower()
         if "roles" in update_data:
             user = await self.get_user_by_id(user_id)
             if user and (user.get("email") or "").strip().lower() == superadmin_email:
@@ -108,7 +108,7 @@ class UserModel(BaseRepository):
             return False
 
         # Blindaje inmutable a nivel de Base de Datos para el Superadministrador
-        superadmin_email = (os.getenv("SUPERADMIN_EMAIL") or "mariomoguel05@gmail.com").strip().lower()
+        superadmin_email = (os.getenv("SUPERADMIN_EMAIL") or "admin@easypay.com").strip().lower()
         user = await self.get_user_by_id(user_id)
         if user and (user.get("email") or "").strip().lower() == superadmin_email:
             if "Administrador" not in roles:
