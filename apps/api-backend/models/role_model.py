@@ -41,11 +41,11 @@ DEFAULT_ROLES = [
     },
     {
         "name": "Usuario Regular",
-        "description": "Usuario estándar que puede crear grupos, registrar gastos y gestionar su billetera.",
+        "description": "Solo puede ver y consumir contenido.",
         "permissions": [
-            "groups:read", "groups:write",
-            "expenses:read", "expenses:write",
-            "wallets:read", "wallets:write",
+            "groups:read",
+            "expenses:read",
+            "wallets:read",
             "stats:read"
         ],
         "is_system": True

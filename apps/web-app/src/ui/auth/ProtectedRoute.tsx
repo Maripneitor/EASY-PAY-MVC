@@ -25,7 +25,7 @@ export const ProtectedRoute = () => {
         return (
             <div className="min-h-screen flex items-center justify-center bg-[var(--bg-body)]">
                 <div className="flex flex-col items-center gap-3">
-                    <div className="w-8 h-8 border-3 border-indigo-500/20 border-t-indigo-600 rounded-full animate-spin" />
+                    <div className="w-8 h-8 border-3 border-blue-500/20 border-t-blue-600 rounded-full animate-spin" />
                     <span className="text-xs font-mono text-slate-400">Verificando sesión...</span>
                 </div>
             </div>

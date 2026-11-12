@@ -78,7 +78,7 @@ export const TwoFactorSetup = () => {
                 {/* Background glow effects - refined to be subtler */}
                 <div className="absolute top-0 left-0 w-full h-full overflow-hidden -z-10 pointer-events-none">
                     <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-blue-600/5 rounded-full blur-[120px]"></div>
-                    <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-indigo-600/5 rounded-full blur-[120px]"></div>
+                    <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-blue-600/5 rounded-full blur-[120px]"></div>
                 </div>
 
                 <div className="bg-[#111827] border border-white/10 w-full max-w-lg rounded-3xl shadow-[0_32px_64px_-15px_rgba(0,0,0,0.8)] flex flex-col animate-fade-in-up relative z-10">

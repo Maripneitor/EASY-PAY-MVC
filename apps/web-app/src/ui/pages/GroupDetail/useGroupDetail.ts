@@ -140,9 +140,11 @@ export const useGroupDetail = (groupId: string) => {
                 }
             };
 
-            socket.onclose = () => {
-                console.log("[WS] Conexión cerrada. Reintentando en 5s...");
-                reconnectTimer = setTimeout(connect, 5000);
+            socket.onclose = (event) => {
+                if (event.code !== 1000) {
+                    console.log("[WS] Conexión cerrada. Reintentando en 5s...");
+                    reconnectTimer = setTimeout(connect, 5000);
+                }
             };
 
             socket.onerror = (err) => {
@@ -154,11 +156,18 @@ export const useGroupDetail = (groupId: string) => {
         connect();
 
         return () => {
+            if (reconnectTimer) clearTimeout(reconnectTimer);
             if (socket) {
                 socket.onclose = null;
-                socket.close();
+                socket.onerror = null;
+                if (socket.readyState === WebSocket.OPEN) {
+                    socket.close(1000, "Component unmounted");
+                } else if (socket.readyState === WebSocket.CONNECTING) {
+                    socket.onopen = () => {
+                        socket?.close(1000, "Component unmounted");
+                    };
+                }
             }
-            if (reconnectTimer) clearTimeout(reconnectTimer);
         };
     }, [groupId, token, queryClient]);
 

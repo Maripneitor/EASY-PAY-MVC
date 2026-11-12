@@ -55,8 +55,8 @@ const RoleToggleSwitch: React.FC<RoleToggleSwitchProps> = ({ checked, onChange, 
                 e.stopPropagation();
                 if (!disabled) onChange(!checked);
             }}
-            className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-indigo-500/40 ${
-                checked ? 'bg-indigo-600' : 'bg-slate-300 dark:bg-slate-700'
+            className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500/40 ${
+                checked ? 'bg-blue-600' : 'bg-slate-300 dark:bg-slate-700'
             } ${disabled ? 'opacity-40 cursor-not-allowed' : ''}`}
         >
             <motion.span
@@ -102,7 +102,7 @@ const AuditMetadataViewer: React.FC<AuditMetadataViewerProps> = ({ metadata }) =
                 let cls = 'text-amber-400 font-semibold';
                 if (/^"/.test(match)) {
                     if (/:$/.test(match)) {
-                        cls = 'text-indigo-400 font-bold';
+                        cls = 'text-blue-400 font-bold';
                     } else {
                         cls = 'text-emerald-400';
                     }
@@ -128,7 +128,7 @@ const AuditMetadataViewer: React.FC<AuditMetadataViewerProps> = ({ metadata }) =
                         onClick={() => setViewMode('structured')}
                         className={`flex items-center gap-1.5 px-3 py-1 rounded-lg transition-all ${
                             viewMode === 'structured'
-                                ? 'bg-indigo-600 text-white shadow-sm'
+                                ? 'bg-blue-600 text-white shadow-sm'
                                 : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
                         }`}
                     >
@@ -140,7 +140,7 @@ const AuditMetadataViewer: React.FC<AuditMetadataViewerProps> = ({ metadata }) =
                         onClick={() => setViewMode('raw')}
                         className={`flex items-center gap-1.5 px-3 py-1 rounded-lg transition-all ${
                             viewMode === 'raw'
-                                ? 'bg-indigo-600 text-white shadow-sm'
+                                ? 'bg-blue-600 text-white shadow-sm'
                                 : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
                         }`}
                     >
@@ -199,13 +199,13 @@ const AuditMetadataViewer: React.FC<AuditMetadataViewerProps> = ({ metadata }) =
                                 );
                             } else if (isMethod) {
                                 displayVal = (
-                                    <span className="inline-flex items-center px-2 py-0.5 rounded-md font-bold text-xs bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
+                                    <span className="inline-flex items-center px-2 py-0.5 rounded-md font-bold text-xs bg-blue-500/20 text-blue-300 border border-blue-500/30">
                                         {String(val).toUpperCase()}
                                     </span>
                                 );
                             } else if (isPath) {
                                 displayVal = (
-                                    <span className="font-mono text-indigo-300 text-xs break-all">
+                                    <span className="font-mono text-blue-300 text-xs break-all">
                                         {String(val)}
                                     </span>
                                 );
@@ -546,7 +546,7 @@ export const AdminDashboard: React.FC = () => {
             <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-[var(--bg-surface)] p-6 rounded-3xl border border-[var(--border-color)] shadow-sm backdrop-blur-md">
                 <div>
                     <div className="flex items-center gap-3">
-                        <span className="p-3 rounded-2xl bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20 shadow-inner">
+                        <span className="p-3 rounded-2xl bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20 shadow-inner">
                             <Shield size={24} />
                         </span>
                         <div>
@@ -571,7 +571,7 @@ export const AdminDashboard: React.FC = () => {
                     whileTap={{ scale: 0.97 }}
                     className="flex items-center gap-2 px-4 py-2.5 bg-[var(--hover-bg)] hover:bg-[var(--border-color)] rounded-xl text-xs sm:text-sm font-bold text-[var(--text-primary)] transition-colors border border-[var(--border-color)] active:scale-[0.98]"
                 >
-                    <RefreshCw size={15} className={isLoading ? "animate-spin text-indigo-500" : ""} />
+                    <RefreshCw size={15} className={isLoading ? "animate-spin text-blue-500" : ""} />
                     <span>Sincronizar datos</span>
                 </motion.button>
             </header>
@@ -607,8 +607,8 @@ export const AdminDashboard: React.FC = () => {
 
             {/* Métricas Principales del Sistema */}
             <section className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <div className="p-5 rounded-2xl bg-[var(--bg-surface)] border border-[var(--border-color)] flex items-center gap-4 shadow-sm hover:border-indigo-500/40 transition-colors">
-                    <div className="p-3.5 rounded-xl bg-indigo-500/10 text-indigo-600 dark:text-indigo-400">
+                <div className="p-5 rounded-2xl bg-[var(--bg-surface)] border border-[var(--border-color)] flex items-center gap-4 shadow-sm hover:border-blue-500/40 transition-colors">
+                    <div className="p-3.5 rounded-xl bg-blue-500/10 text-blue-600 dark:text-blue-400">
                         <Users size={22} />
                     </div>
                     <div>
@@ -645,7 +645,7 @@ export const AdminDashboard: React.FC = () => {
                     onClick={() => setActiveTab('users')}
                     className={`relative flex items-center gap-2 px-5 py-3.5 font-bold text-xs sm:text-sm transition-colors whitespace-nowrap ${
                         activeTab === 'users'
-                            ? 'text-indigo-600 dark:text-indigo-400'
+                            ? 'text-blue-600 dark:text-blue-400'
                             : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
                     }`}
                 >
@@ -654,7 +654,7 @@ export const AdminDashboard: React.FC = () => {
                     {activeTab === 'users' && (
                         <motion.div 
                             layoutId="adminNavPill" 
-                            className="absolute bottom-0 left-0 right-0 h-0.5 bg-indigo-600 dark:bg-indigo-400" 
+                            className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600 dark:bg-blue-400" 
                             transition={{ type: "spring", stiffness: 450, damping: 35 }}
                         />
                     )}
@@ -665,7 +665,7 @@ export const AdminDashboard: React.FC = () => {
                     onClick={() => setActiveTab('roles')}
                     className={`relative flex items-center gap-2 px-5 py-3.5 font-bold text-xs sm:text-sm transition-colors whitespace-nowrap ${
                         activeTab === 'roles'
-                            ? 'text-indigo-600 dark:text-indigo-400'
+                            ? 'text-blue-600 dark:text-blue-400'
                             : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
                     }`}
                 >
@@ -674,7 +674,7 @@ export const AdminDashboard: React.FC = () => {
                     {activeTab === 'roles' && (
                         <motion.div 
                             layoutId="adminNavPill" 
-                            className="absolute bottom-0 left-0 right-0 h-0.5 bg-indigo-600 dark:bg-indigo-400" 
+                            className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600 dark:bg-blue-400" 
                             transition={{ type: "spring", stiffness: 450, damping: 35 }}
                         />
                     )}
@@ -685,7 +685,7 @@ export const AdminDashboard: React.FC = () => {
                     onClick={() => setActiveTab('audit')}
                     className={`relative flex items-center gap-2 px-5 py-3.5 font-bold text-xs sm:text-sm transition-colors whitespace-nowrap ${
                         activeTab === 'audit'
-                            ? 'text-indigo-600 dark:text-indigo-400'
+                            ? 'text-blue-600 dark:text-blue-400'
                             : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
                     }`}
                 >
@@ -694,7 +694,7 @@ export const AdminDashboard: React.FC = () => {
                     {activeTab === 'audit' && (
                         <motion.div 
                             layoutId="adminNavPill" 
-                            className="absolute bottom-0 left-0 right-0 h-0.5 bg-indigo-600 dark:bg-indigo-400" 
+                            className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600 dark:bg-blue-400" 
                             transition={{ type: "spring", stiffness: 450, damping: 35 }}
                         />
                     )}
@@ -712,7 +712,7 @@ export const AdminDashboard: React.FC = () => {
                                 placeholder="Buscar usuarios por nombre o correo..."
                                 value={userSearch}
                                 onChange={(e) => setUserSearch(e.target.value)}
-                                className="w-full pl-10 pr-4 py-2.5 bg-[var(--bg-surface)] border border-[var(--border-color)] rounded-xl text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 text-[var(--text-primary)] transition-all"
+                                className="w-full pl-10 pr-4 py-2.5 bg-[var(--bg-surface)] border border-[var(--border-color)] rounded-xl text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-[var(--text-primary)] transition-all"
                             />
                         </div>
                         <div className="text-xs font-semibold text-[var(--text-secondary)] self-end sm:self-center">
@@ -735,7 +735,7 @@ export const AdminDashboard: React.FC = () => {
                                                 <div className="flex items-center gap-1.5 flex-wrap">
                                                     <span className="font-semibold text-sm text-[var(--text-primary)]">{u.nombre || 'Sin nombre'}</span>
                                                     {isSelf && (
-                                                        <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
+                                                        <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-blue-500/10 text-blue-400 border border-blue-500/20">
                                                             TÚ
                                                         </span>
                                                     )}
@@ -800,7 +800,7 @@ export const AdminDashboard: React.FC = () => {
                                                         <div className="flex items-center gap-1.5">
                                                             <span className="font-semibold text-[var(--text-primary)]">{u.nombre || 'Sin nombre'}</span>
                                                             {isSelf && (
-                                                                <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
+                                                                <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-blue-500/10 text-blue-400 border border-blue-500/20">
                                                                     TÚ
                                                                 </span>
                                                             )}
@@ -862,7 +862,7 @@ export const AdminDashboard: React.FC = () => {
                             <motion.button
                                 whileTap={{ scale: 0.96 }}
                                 onClick={() => setShowNewRoleModal(true)}
-                                className="flex items-center gap-1 text-xs font-bold px-3 py-2 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition-colors shadow-sm"
+                                className="flex items-center gap-1 text-xs font-bold px-3 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors shadow-sm"
                             >
                                 <Plus size={14} /> Nuevo rol
                             </motion.button>
@@ -877,7 +877,7 @@ export const AdminDashboard: React.FC = () => {
                                         onClick={() => handleSelectRole(r)}
                                         className={`p-4 rounded-2xl border cursor-pointer transition-all ${
                                             isSelected
-                                                ? 'bg-indigo-500/10 border-indigo-500 shadow-sm'
+                                                ? 'bg-blue-500/10 border-blue-500 shadow-sm'
                                                 : 'bg-[var(--bg-surface)] border-[var(--border-color)] hover:border-slate-400 dark:hover:border-slate-600'
                                         }`}
                                     >
@@ -891,7 +891,7 @@ export const AdminDashboard: React.FC = () => {
                                         </div>
                                         <p className="text-xs text-[var(--text-secondary)] mt-1 line-clamp-2">{r.description || 'Sin descripción'}</p>
                                         <div className="flex items-center justify-between mt-3 pt-2 border-t border-[var(--border-color)]">
-                                            <span className="text-[11px] font-bold text-indigo-600 dark:text-indigo-400">
+                                            <span className="text-[11px] font-bold text-blue-600 dark:text-blue-400">
                                                 {r.permissions?.length || 0} permisos activos
                                             </span>
                                             <ChevronRight size={14} className="text-slate-400" />
@@ -910,7 +910,7 @@ export const AdminDashboard: React.FC = () => {
                                     <div>
                                         <div className="flex items-center gap-2">
                                             <h3 className="text-lg font-bold text-[var(--text-primary)]">
-                                                Matriz de permisos: <span className="text-indigo-600 dark:text-indigo-400">{selectedRole.name}</span>
+                                                Matriz de permisos: <span className="text-blue-600 dark:text-blue-400">{selectedRole.name}</span>
                                             </h3>
                                             {selectedRole.name === 'Administrador' && (
                                                 <span className="p-1 rounded bg-amber-500/10 text-amber-600" title="Acceso total global">
@@ -928,7 +928,7 @@ export const AdminDashboard: React.FC = () => {
                                             whileTap={{ scale: 0.97 }}
                                             onClick={handleSaveRolePermissions}
                                             disabled={isSavingPermissions}
-                                            className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white rounded-xl font-bold text-xs transition-colors shadow-sm"
+                                            className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white rounded-xl font-bold text-xs transition-colors shadow-sm"
                                         >
                                             {isSavingPermissions ? (
                                                 <RefreshCw size={14} className="animate-spin" />
@@ -963,7 +963,7 @@ export const AdminDashboard: React.FC = () => {
                                                         <button
                                                             type="button"
                                                             onClick={() => handleToggleAllResourceActions(res.id, !allChecked)}
-                                                            className="text-[11px] font-bold text-indigo-600 dark:text-indigo-400 hover:underline"
+                                                            className="text-[11px] font-bold text-blue-600 dark:text-blue-400 hover:underline"
                                                         >
                                                             {allChecked ? 'Desmarcar todos' : 'Marcar todos'}
                                                         </button>
@@ -983,13 +983,13 @@ export const AdminDashboard: React.FC = () => {
                                                                 onClick={() => handleTogglePermission(permKey)}
                                                                 className={`flex items-center gap-2.5 p-2.5 rounded-xl text-xs font-semibold border transition-all text-left ${
                                                                     isChecked
-                                                                        ? 'bg-indigo-500/15 border-indigo-500/50 text-indigo-700 dark:text-indigo-300 shadow-sm'
+                                                                        ? 'bg-blue-500/15 border-blue-500/50 text-blue-700 dark:text-blue-300 shadow-sm'
                                                                         : 'bg-[var(--bg-surface)] border-[var(--border-color)] text-[var(--text-secondary)] hover:border-slate-400'
                                                                 }`}
                                                             >
                                                                 <span className={`w-4 h-4 rounded-md flex items-center justify-center text-[10px] border transition-colors ${
                                                                     isChecked
-                                                                        ? 'bg-indigo-600 border-indigo-600 text-white'
+                                                                        ? 'bg-blue-600 border-blue-600 text-white'
                                                                         : 'border-slate-300 dark:border-slate-600 bg-transparent'
                                                                 }`}>
                                                                     {isChecked ? <Check size={11} /> : null}
@@ -1017,10 +1017,10 @@ export const AdminDashboard: React.FC = () => {
             {activeTab === 'audit' && (
                 <div className="space-y-4">
                     {/* Aviso de Inmutabilidad */}
-                    <div className="flex items-center gap-3 p-4 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 text-xs sm:text-sm text-[var(--text-primary)]">
-                        <ShieldAlert className="text-indigo-600 dark:text-indigo-400 flex-shrink-0" size={20} />
+                    <div className="flex items-center gap-3 p-4 rounded-2xl bg-blue-500/10 border border-blue-500/20 text-xs sm:text-sm text-[var(--text-primary)]">
+                        <ShieldAlert className="text-blue-600 dark:text-blue-400 flex-shrink-0" size={20} />
                         <div>
-                            <span className="font-bold text-indigo-600 dark:text-indigo-400">Registro de Auditoría Inmutable (Append-Only): </span>
+                            <span className="font-bold text-blue-600 dark:text-blue-400">Registro de Auditoría Inmutable (Append-Only): </span>
                             <span className="text-[var(--text-secondary)]">
                                 Cada evento queda sellado con fecha, hora, dirección IP, identificador de usuario y código de respuesta HTTP. Los registros no pueden ser eliminados ni modificados por ninguna vía.
                             </span>
@@ -1036,7 +1036,7 @@ export const AdminDashboard: React.FC = () => {
                                 placeholder="Filtrar por correo de usuario..."
                                 value={auditSearchEmail}
                                 onChange={(e) => setAuditSearchEmail(e.target.value)}
-                                className="w-full pl-10 pr-4 py-2.5 bg-[var(--bg-surface)] border border-[var(--border-color)] rounded-xl text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 text-[var(--text-primary)]"
+                                className="w-full pl-10 pr-4 py-2.5 bg-[var(--bg-surface)] border border-[var(--border-color)] rounded-xl text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-[var(--text-primary)]"
                             />
                         </div>
 
@@ -1085,13 +1085,13 @@ export const AdminDashboard: React.FC = () => {
                                                     ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20'
                                                     : isFail
                                                     ? 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20'
-                                                    : 'bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border-indigo-500/20'
+                                                    : 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20'
                                             }`}>
                                                 {log.action}
                                             </span>
                                             <button
                                                 onClick={() => setInspectLog(log)}
-                                                className="inline-flex items-center gap-1 text-[11px] font-bold text-indigo-600 dark:text-indigo-400 hover:underline"
+                                                className="inline-flex items-center gap-1 text-[11px] font-bold text-blue-600 dark:text-blue-400 hover:underline"
                                             >
                                                 <Eye size={12} />
                                                 <span>Inspeccionar</span>
@@ -1108,7 +1108,7 @@ export const AdminDashboard: React.FC = () => {
                                         </div>
 
                                         <div className="flex items-center justify-between text-[11px] pt-1 border-t border-[var(--border-color)] font-mono text-slate-400">
-                                            <span className="font-sans font-bold uppercase text-[10px] text-indigo-500">
+                                            <span className="font-sans font-bold uppercase text-[10px] text-blue-500">
                                                 {log.resource}
                                             </span>
                                             <span>IP: {log.ip_address}</span>
@@ -1123,7 +1123,7 @@ export const AdminDashboard: React.FC = () => {
                     <div className="hidden sm:block overflow-x-auto bg-[var(--bg-surface)] rounded-2xl border border-[var(--border-subtle)] shadow-sm relative">
                         {isAuditLoading && (
                             <div className="absolute inset-0 bg-black/20 backdrop-blur-[1px] flex items-center justify-center z-10 rounded-2xl">
-                                <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-[var(--bg-surface)] border border-[var(--border-subtle)] text-xs font-medium text-indigo-400 shadow-lg">
+                                <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-[var(--bg-surface)] border border-[var(--border-subtle)] text-xs font-medium text-blue-400 shadow-lg">
                                     <RefreshCw className="animate-spin" size={14} />
                                     <span>Actualizando registros...</span>
                                 </div>
@@ -1166,7 +1166,7 @@ export const AdminDashboard: React.FC = () => {
                                                             ? 'bg-emerald-500/10 text-emerald-500 dark:text-emerald-400 border-emerald-500/20'
                                                             : isFail
                                                             ? 'bg-rose-500/10 text-rose-500 dark:text-rose-400 border-rose-500/20'
-                                                            : 'bg-indigo-500/10 text-indigo-500 dark:text-indigo-400 border-indigo-500/20'
+                                                            : 'bg-blue-500/10 text-blue-500 dark:text-blue-400 border-blue-500/20'
                                                     }`}>
                                                         {log.action}
                                                     </span>
@@ -1239,7 +1239,7 @@ export const AdminDashboard: React.FC = () => {
                                 <span>Anterior</span>
                             </motion.button>
 
-                            <span className="px-3 py-1.5 bg-indigo-500/10 border border-indigo-500/20 text-indigo-600 dark:text-indigo-400 rounded-xl text-xs font-bold">
+                            <span className="px-3 py-1.5 bg-blue-500/10 border border-blue-500/20 text-blue-600 dark:text-blue-400 rounded-xl text-xs font-bold">
                                 Pág. {auditPage} de {auditTotalPages || 1}
                             </span>
 
@@ -1361,7 +1361,7 @@ export const AdminDashboard: React.FC = () => {
                                     type="button"
                                     onClick={handleSaveUserRoles}
                                     disabled={isAssigningRoles || selectedRolesForUser.length === 0}
-                                    className="flex items-center gap-2 px-5 py-2 text-xs font-bold bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl disabled:opacity-50 transition-colors shadow-sm"
+                                    className="flex items-center gap-2 px-5 py-2 text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white rounded-xl disabled:opacity-50 transition-colors shadow-sm"
                                 >
                                     {isAssigningRoles ? <RefreshCw size={14} className="animate-spin" /> : <Save size={14} />}
                                     <span>{isAssigningRoles ? 'Guardando...' : 'Guardar roles'}</span>
@@ -1407,7 +1407,7 @@ export const AdminDashboard: React.FC = () => {
                                             placeholder="Ej. Moderador de Contenido"
                                             value={newRoleName}
                                             onChange={(e) => setNewRoleName(e.target.value)}
-                                            className="w-full mt-1.5 px-3.5 py-2.5 bg-[var(--bg-body)] border border-[var(--border-color)] rounded-xl text-xs sm:text-sm text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-indigo-500 font-medium"
+                                            className="w-full mt-1.5 px-3.5 py-2.5 bg-[var(--bg-body)] border border-[var(--border-color)] rounded-xl text-xs sm:text-sm text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-blue-500 font-medium"
                                         />
                                     </div>
                                     <div>
@@ -1417,7 +1417,7 @@ export const AdminDashboard: React.FC = () => {
                                             placeholder="Ej. Puede revisar y editar gastos y grupos"
                                             value={newRoleDesc}
                                             onChange={(e) => setNewRoleDesc(e.target.value)}
-                                            className="w-full mt-1.5 px-3.5 py-2.5 bg-[var(--bg-body)] border border-[var(--border-color)] rounded-xl text-xs sm:text-sm text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-indigo-500 font-medium"
+                                            className="w-full mt-1.5 px-3.5 py-2.5 bg-[var(--bg-body)] border border-[var(--border-color)] rounded-xl text-xs sm:text-sm text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-blue-500 font-medium"
                                         />
                                     </div>
                                 </div>
@@ -1442,7 +1442,7 @@ export const AdminDashboard: React.FC = () => {
                                                         <button
                                                             type="button"
                                                             onClick={() => handleToggleNewRoleResourceAll(res.id, !allChecked)}
-                                                            className="text-[10px] font-bold text-indigo-600 dark:text-indigo-400 hover:underline"
+                                                            className="text-[10px] font-bold text-blue-600 dark:text-blue-400 hover:underline"
                                                         >
                                                             {allChecked ? 'Desmarcar todos' : 'Marcar todos'}
                                                         </button>
@@ -1460,13 +1460,13 @@ export const AdminDashboard: React.FC = () => {
                                                                     onClick={() => handleToggleNewRolePermission(permKey)}
                                                                     className={`flex items-center gap-2 p-2 rounded-xl text-[11px] font-semibold border transition-all ${
                                                                         isChecked
-                                                                            ? 'bg-indigo-500/15 border-indigo-500/50 text-indigo-700 dark:text-indigo-300'
+                                                                            ? 'bg-blue-500/15 border-blue-500/50 text-blue-700 dark:text-blue-300'
                                                                             : 'bg-[var(--bg-surface)] border-[var(--border-color)] text-[var(--text-secondary)] hover:border-slate-400'
                                                                     }`}
                                                                 >
                                                                     <span className={`w-3.5 h-3.5 rounded flex items-center justify-center text-[9px] border ${
                                                                         isChecked
-                                                                            ? 'bg-indigo-600 border-indigo-600 text-white'
+                                                                            ? 'bg-blue-600 border-blue-600 text-white'
                                                                             : 'border-slate-300 dark:border-slate-600'
                                                                     }`}>
                                                                         {isChecked ? <Check size={10} /> : null}
@@ -1494,7 +1494,7 @@ export const AdminDashboard: React.FC = () => {
                                         whileTap={{ scale: 0.97 }}
                                         type="submit"
                                         disabled={isCreatingRole || !newRoleName.trim()}
-                                        className="px-5 py-2 text-xs font-bold bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 disabled:opacity-50 transition-colors shadow-sm"
+                                        className="px-5 py-2 text-xs font-bold bg-blue-600 text-white rounded-xl hover:bg-blue-700 disabled:opacity-50 transition-colors shadow-sm"
                                     >
                                         {isCreatingRole ? 'Creando rol...' : 'Crear rol'}
                                     </motion.button>
@@ -1527,7 +1527,7 @@ export const AdminDashboard: React.FC = () => {
                             {/* Header del Modal */}
                             <div className="flex justify-between items-center border-b border-[var(--border-color)] pb-3.5">
                                 <div className="flex items-center gap-3">
-                                    <span className="p-2.5 rounded-2xl bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20 shadow-xs">
+                                    <span className="p-2.5 rounded-2xl bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20 shadow-xs">
                                         <ShieldAlert size={20} />
                                     </span>
                                     <div>
@@ -1557,7 +1557,7 @@ export const AdminDashboard: React.FC = () => {
                                         Acción y Recurso
                                     </span>
                                     <div className="flex items-center gap-2">
-                                        <span className="px-2 py-0.5 rounded-md text-[11px] font-bold bg-indigo-500/15 text-indigo-400 border border-indigo-500/30">
+                                        <span className="px-2 py-0.5 rounded-md text-[11px] font-bold bg-blue-500/15 text-blue-400 border border-blue-500/30">
                                             {inspectLog.action}
                                         </span>
                                         <span className="text-[11px] font-bold text-slate-400 uppercase">
@@ -1603,7 +1603,7 @@ export const AdminDashboard: React.FC = () => {
                             {/* Visor de Metadatos Formateados con Syntax Highlighting */}
                             <div className="space-y-2">
                                 <span className="text-xs font-bold text-[var(--text-primary)] flex items-center gap-1.5">
-                                    <Code size={14} className="text-indigo-400" />
+                                    <Code size={14} className="text-blue-400" />
                                     <span>Metadatos en Payload</span>
                                 </span>
                                 <AuditMetadataViewer metadata={inspectLog.metadata || inspectLog.details || {}} />
@@ -1619,7 +1619,7 @@ export const AdminDashboard: React.FC = () => {
                                     whileTap={{ scale: 0.95 }}
                                     type="button"
                                     onClick={() => setInspectLog(null)}
-                                    className="px-5 py-2 text-xs font-bold bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl transition-all shadow-sm"
+                                    className="px-5 py-2 text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white rounded-xl transition-all shadow-sm"
                                 >
                                     Cerrar
                                 </motion.button>

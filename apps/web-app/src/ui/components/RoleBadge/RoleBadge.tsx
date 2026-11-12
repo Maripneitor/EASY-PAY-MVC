@@ -18,8 +18,8 @@ function normalizeRoleKey(role: string): 'admin' | 'editor' | 'user' | 'custom' 
 
 const roleStyles: Record<'admin' | 'editor' | 'user' | 'custom', { badge: string; dot: string }> = {
     admin: {
-        badge: 'bg-indigo-500/10 text-indigo-400 border-indigo-500/20 hover:bg-indigo-500/15',
-        dot: 'bg-indigo-400',
+        badge: 'bg-blue-500/10 text-blue-400 border-blue-500/20 hover:bg-blue-500/15',
+        dot: 'bg-blue-400',
     },
     editor: {
         badge: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20 hover:bg-emerald-500/15',

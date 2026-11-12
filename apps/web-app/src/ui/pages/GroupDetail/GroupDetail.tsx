@@ -251,14 +251,14 @@ export const GroupDetail = () => {
     return (
         <div className="space-y-6 sm:space-y-8 pb-20">
             {/* Cabecera Unificada y Cohesiva del Grupo (Sin solapamientos ni doble franja) */}
-            <div className="bg-[#0f172a] border border-slate-800/80 rounded-3xl p-4 sm:p-6 shadow-sm space-y-4">
+            <div className="bg-white dark:bg-[#0f172a] border border-slate-200 dark:border-slate-800/80 rounded-3xl p-4 sm:p-6 shadow-sm space-y-4">
                 {/* Fila Principal: Botón Retroceso ("←") y Título en una sola línea horizontal limpia */}
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                     <div className="flex items-center gap-3 sm:gap-4 min-w-0">
                         <button
                             type="button"
                             onClick={() => navigate(ROUTES.GROUPS)}
-                            className="w-10 h-10 rounded-2xl bg-slate-800/80 hover:bg-slate-700 active:scale-95 text-slate-200 hover:text-white border border-slate-700/80 flex items-center justify-center transition-transform duration-150 shrink-0 shadow-sm"
+                            className="w-10 h-10 rounded-2xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800/80 dark:hover:bg-slate-700 active:scale-95 text-slate-700 hover:text-slate-900 dark:text-slate-200 dark:hover:text-white border border-slate-200 dark:border-slate-700/80 flex items-center justify-center transition-transform duration-150 shrink-0 shadow-sm"
                             aria-label="Volver a Mis Grupos"
                             title="Volver a Mis Grupos"
                         >
@@ -266,11 +266,11 @@ export const GroupDetail = () => {
                         </button>
 
                         <div className="min-w-0 flex-1">
-                            <h1 className="text-xl sm:text-2xl md:text-3xl font-black text-white tracking-tight truncate leading-tight">
+                            <h1 className="text-xl sm:text-2xl md:text-3xl font-black text-slate-900 dark:text-white tracking-tight truncate leading-tight">
                                 {groupName || "Detalle de Grupo"}
                             </h1>
                             {groupDescription && (
-                                <p className="text-xs text-slate-400 font-medium truncate mt-0.5">
+                                <p className="text-xs text-slate-500 dark:text-slate-400 font-medium truncate mt-0.5">
                                     {groupDescription}
                                 </p>
                             )}
@@ -282,7 +282,7 @@ export const GroupDetail = () => {
                         <button
                             type="button"
                             onClick={handleCopyCode}
-                            className="inline-flex items-center gap-2 px-3.5 py-2 bg-slate-800/80 hover:bg-slate-800 active:scale-[0.97] text-slate-200 hover:text-white rounded-xl border border-slate-700/80 text-xs font-black uppercase tracking-wider shadow-sm transition-transform duration-200 ease-out group"
+                            className="inline-flex items-center gap-2 px-3.5 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800/80 dark:hover:bg-slate-800 active:scale-[0.97] text-slate-700 hover:text-slate-900 dark:text-slate-200 dark:hover:text-white rounded-xl border border-slate-200 dark:border-slate-700/80 text-xs font-black uppercase tracking-wider shadow-sm transition-transform duration-200 ease-out group"
                             title="Copiar código de invitación"
                         >
                             <AnimatePresence mode="wait" initial={false}>
@@ -292,7 +292,7 @@ export const GroupDetail = () => {
                                         initial={{ scale: 0.8, opacity: 0 }}
                                         animate={{ scale: 1, opacity: 1 }}
                                         exit={{ scale: 0.8, opacity: 0 }}
-                                        className="flex items-center gap-1.5 text-emerald-400"
+                                        className="flex items-center gap-1.5 text-emerald-500 dark:text-emerald-400"
                                     >
                                         <Check size={14} className="stroke-[3]" />
                                         <span>¡Copiado!</span>
@@ -305,8 +305,8 @@ export const GroupDetail = () => {
                                         exit={{ scale: 0.8, opacity: 0 }}
                                         className="flex items-center gap-2"
                                     >
-                                        <Copy size={14} className="text-cyan-400 group-hover:scale-110 transition-transform" />
-                                        <span>Código: <span className="font-mono text-cyan-300 tracking-wider font-bold">{groupCode || '...'}</span></span>
+                                        <Copy size={14} className="text-cyan-600 dark:text-cyan-400 group-hover:scale-110 transition-transform" />
+                                        <span>Código: <span className="font-mono text-cyan-600 dark:text-cyan-300 tracking-wider font-bold">{groupCode || '...'}</span></span>
                                     </motion.div>
                                 )}
                             </AnimatePresence>
@@ -327,7 +327,7 @@ export const GroupDetail = () => {
                 </div>
 
                 {/* Sub-fila: Lista de Participantes Activos Integrada */}
-                <div className="pt-3.5 border-t border-slate-800/80 flex flex-wrap items-center justify-between gap-3">
+                <div className="pt-3.5 border-t border-slate-200 dark:border-slate-800/80 flex flex-wrap items-center justify-between gap-3">
                     <div className="flex items-center gap-3">
                         <div className="flex -space-x-2.5 overflow-hidden pl-1 py-1">
                             {members.slice(0, 5).map((m: any, i: number) => {
@@ -348,7 +348,7 @@ export const GroupDetail = () => {
                                         key={m.id || i}
                                         title={name}
                                         className={cn(
-                                            "w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center text-xs font-black ring-2 ring-[#0f172a] shadow-sm select-none transition-transform hover:scale-110 hover:z-10",
+                                            "w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center text-xs font-black ring-2 ring-white dark:ring-[#0f172a] shadow-sm select-none transition-transform hover:scale-110 hover:z-10",
                                             colorClass
                                         )}
                                     >
@@ -359,14 +359,14 @@ export const GroupDetail = () => {
                             {members.length > 5 && (
                                 <div 
                                     title={`${members.length - 5} integrantes más`}
-                                    className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-slate-800 text-slate-300 ring-2 ring-[#0f172a] flex items-center justify-center text-[11px] font-black shadow-sm"
+                                    className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 ring-2 ring-white dark:ring-[#0f172a] flex items-center justify-center text-[11px] font-black shadow-sm"
                                 >
                                     +{members.length - 5}
                                 </div>
                             )}
                         </div>
 
-                        <span className="text-xs font-bold text-slate-300 tracking-wide">
+                        <span className="text-xs font-bold text-slate-600 dark:text-slate-300 tracking-wide">
                             {members.length} {members.length === 1 ? 'participante activo' : 'participantes activos'}
                         </span>
                     </div>
@@ -374,7 +374,7 @@ export const GroupDetail = () => {
                     <button 
                         type="button"
                         onClick={() => setActiveTab('miembros')}
-                        className="text-xs font-bold text-cyan-400 hover:text-cyan-300 uppercase tracking-wider transition-colors inline-flex items-center gap-1 group"
+                        className="text-xs font-bold text-blue-600 hover:text-blue-700 dark:text-cyan-400 dark:hover:text-cyan-300 uppercase tracking-wider transition-colors inline-flex items-center gap-1 group"
                     >
                         <span>Ver todos los integrantes</span>
                         <ArrowRight size={13} className="group-hover:translate-x-0.5 transition-transform" />
@@ -390,16 +390,16 @@ export const GroupDetail = () => {
                         value: totalSpent, 
                         icon: <Receipt size={22} className="text-blue-500" />, 
                         bg: "bg-blue-500/10 border border-blue-500/20",
-                        textColor: "text-white",
+                        textColor: "text-slate-900 dark:text-white",
                         subtext: "Incluye propinas e impuestos calculados",
                         tooltip: "Suma acumulada de todos los gastos, propinas e impuestos registrados en el grupo."
                     },
                     { 
                         label: "Tu Parte", 
                         value: userShare, 
-                        icon: <UserCircle size={22} className="text-cyan-400" />, 
+                        icon: <UserCircle size={22} className="text-cyan-500 dark:text-cyan-400" />, 
                         bg: "bg-cyan-500/10 border border-cyan-500/20",
-                        textColor: "text-white",
+                        textColor: "text-slate-900 dark:text-white",
                         subtext: "Tu consumo individual neto",
                         tooltip: "Monto neto asignado a tu cuenta según los ítems y gastos en los que participas."
                     },
@@ -408,13 +408,13 @@ export const GroupDetail = () => {
                         value: Math.abs(userOwed), 
                         icon: userOwed < -0.01 
                             ? <TrendingDown size={22} className="text-rose-500" /> 
-                            : (userOwed > 0.01 ? <TrendingUp size={22} className="text-emerald-400" /> : <Check size={22} className="text-slate-400" />), 
+                            : (userOwed > 0.01 ? <TrendingUp size={22} className="text-emerald-500 dark:text-emerald-400" /> : <Check size={22} className="text-slate-600 dark:text-slate-400" />), 
                         bg: userOwed < -0.01 
                             ? "bg-rose-500/10 border border-rose-500/20" 
-                            : (userOwed > 0.01 ? "bg-emerald-500/10 border border-emerald-500/20" : "bg-slate-800/40 border border-slate-700/40"),
+                            : (userOwed > 0.01 ? "bg-emerald-500/10 border border-emerald-500/20" : "bg-slate-100 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-700/40"),
                         textColor: userOwed < -0.01 
-                            ? "text-rose-400" 
-                            : (userOwed > 0.01 ? "text-emerald-400" : "text-slate-300"),
+                            ? "text-rose-600 dark:text-rose-400" 
+                            : (userOwed > 0.01 ? "text-emerald-600 dark:text-emerald-400" : "text-slate-900 dark:text-white"),
                         subtext: userOwed < -0.01 
                             ? "Saldo pendiente por liquidar" 
                             : (userOwed > 0.01 ? "Saldo a tu favor por cobrar" : "Todas tus cuentas al día"),
@@ -422,7 +422,7 @@ export const GroupDetail = () => {
                         action: userOwed < -0.01 ? (
                             <button 
                                 onClick={() => navigate(ROUTES.SETTLE_UP(finalId))}
-                                className="mt-2.5 px-3 py-1 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/30 rounded-xl text-[10px] font-black uppercase tracking-wider transition-transform duration-200 ease-out hover:scale-[1.02] active:scale-[0.97]"
+                                className="mt-2.5 px-3 py-1 bg-rose-500/10 hover:bg-rose-500/20 text-rose-600 dark:text-rose-400 border border-rose-500/30 rounded-xl text-[10px] font-black uppercase tracking-wider transition-transform duration-200 ease-out hover:scale-[1.02] active:scale-[0.97]"
                             >
                                 Pagar Ahora
                             </button>
@@ -432,7 +432,7 @@ export const GroupDetail = () => {
                     <div 
                         key={i}
                         className={cn(
-                            "p-5 sm:p-6 bg-[#0f172a] border border-slate-800/80 rounded-3xl flex items-center gap-4 sm:gap-5 shadow-sm hover:border-slate-700/80 transition-colors",
+                            "p-5 sm:p-6 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800/80 rounded-3xl flex items-center gap-4 sm:gap-5 shadow-sm hover:border-slate-300 dark:hover:border-slate-700/80 transition-colors",
                             i === 2 && "sm:col-span-2 lg:col-span-1"
                         )}
                     >
@@ -441,15 +441,15 @@ export const GroupDetail = () => {
                         </div>
                         <div className="min-w-0 flex-1 overflow-hidden">
                             <div className="flex items-center gap-1.5 mb-0.5">
-                                <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 truncate">{stat.label}</p>
-                                <span title={stat.tooltip} className="cursor-help text-slate-500 hover:text-cyan-400 transition-colors inline-flex" aria-label={stat.tooltip}>
+                                <p className="text-[10px] font-black uppercase tracking-widest text-slate-500 dark:text-slate-400 truncate">{stat.label}</p>
+                                <span title={stat.tooltip} className="cursor-help text-slate-400 hover:text-cyan-600 dark:hover:text-cyan-400 transition-colors inline-flex" aria-label={stat.tooltip}>
                                     <Info size={11} />
                                 </span>
                             </div>
                             <p className={cn("text-2xl sm:text-3xl font-black tracking-tight truncate", stat.textColor)} title={`$${Number(stat.value || 0).toFixed(2)}`}>
                                 ${Number(stat.value || 0).toFixed(2)}
                             </p>
-                            <p className="text-[10px] font-semibold text-slate-400/80 truncate mt-0.5" title={stat.subtext}>
+                            <p className="text-[10px] font-semibold text-slate-500 dark:text-slate-400/80 truncate mt-0.5" title={stat.subtext}>
                                 {stat.subtext}
                             </p>
                             {(stat as any).action}

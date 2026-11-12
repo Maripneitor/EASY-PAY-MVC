@@ -131,13 +131,13 @@ export const GroupMembersList: React.FC<GroupMembersListProps> = ({
                         <button
                             type="button"
                             onClick={handleCopyCode}
-                            className="px-3.5 py-2.5 rounded-xl bg-slate-800/80 hover:bg-slate-800 text-[var(--text-primary)] border border-slate-700/80 hover:border-cyan-500/40 font-mono text-xs font-bold flex items-center gap-2 transition-all active:scale-95 shadow-sm"
+                            className="px-3.5 py-2.5 rounded-xl bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-900 dark:text-white border border-slate-200 dark:border-slate-700/80 hover:border-cyan-500/40 font-mono text-xs font-bold flex items-center gap-2 transition-all active:scale-95 shadow-sm"
                             title="Haz clic para copiar el código del grupo"
                         >
-                            <Scan size={14} className="text-cyan-400 shrink-0" />
+                            <Scan size={14} className="text-cyan-600 dark:text-cyan-400 shrink-0" />
                             <span className="tracking-widest">{groupCode}</span>
                             {copiedCode ? (
-                                <Check size={14} className="text-emerald-400 shrink-0 ml-1" />
+                                <Check size={14} className="text-emerald-500 dark:text-emerald-400 shrink-0 ml-1" />
                             ) : (
                                 <Copy size={13} className="text-slate-400 shrink-0 ml-1" />
                             )}

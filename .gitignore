@@ -96,3 +96,9 @@ MOBILE_VIEWS_AUDIT.md
 /docs/
 
 *.apk
+
+# Entregables y archivos locales temporales
+Entregables.md
+README_PERFILES_PRUEBA.md
+backups/
+

@@ -26,8 +26,9 @@ class InvitationModel(BaseRepository):
 
     def _map_invitation(self, inv: Optional[Dict[str, Any]]) -> Optional[Dict[str, Any]]:
         if inv:
-            inv["id"] = str(inv["_id"])
-            del inv["_id"]
+            if "_id" in inv:
+                inv["id"] = str(inv["_id"])
+                del inv["_id"]
         return inv
 
     async def create_invitation(self, data: Dict[str, Any]) -> str:
@@ -43,6 +44,9 @@ class InvitationModel(BaseRepository):
             data["invited_email"] = data["invited_email"].strip().lower()
 
         result = await self.collection.insert_one(data)
+        data["id"] = str(result.inserted_id)
+        if "_id" in data:
+            del data["_id"]
         return str(result.inserted_id)
 
     async def find_pending_by_group_and_email(self, group_id: str, email: str) -> Optional[Dict[str, Any]]:

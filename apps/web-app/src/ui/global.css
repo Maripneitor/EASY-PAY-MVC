@@ -19,10 +19,10 @@
     --header-bg: rgba(255, 255, 255, 0.9);
     --hover-bg: rgba(15, 23, 42, 0.035);
 
-    /* Primary FinTech Palette (Refined Indigo) */
-    --primary: #4f46e5;
-    --primary-subtle: rgba(79, 70, 229, 0.08);
-    --primary-border: rgba(79, 70, 229, 0.2);
+    /* Primary FinTech Palette (Refined Blue) */
+    --primary: #2563eb;
+    --primary-subtle: rgba(37, 99, 235, 0.08);
+    --primary-border: rgba(37, 99, 235, 0.2);
     --primary-foreground: #ffffff;
 
     /* Form Inputs */
@@ -60,10 +60,10 @@
     --header-bg: rgba(10, 14, 23, 0.85);
     --hover-bg: rgba(255, 255, 255, 0.025);
 
-    /* Primary FinTech Palette (Soft Non-glare Indigo) */
-    --primary: #6366f1;
-    --primary-subtle: rgba(99, 102, 241, 0.12);
-    --primary-border: rgba(99, 102, 241, 0.25);
+    /* Primary FinTech Palette (Refined Blue) */
+    --primary: #2563eb;
+    --primary-subtle: rgba(37, 99, 235, 0.12);
+    --primary-border: rgba(37, 99, 235, 0.25);
     --primary-foreground: #ffffff;
 
     /* Form Inputs */

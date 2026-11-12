@@ -1,5 +1,6 @@
 from fastapi import APIRouter, HTTPException, Depends, Request, Query
 from typing import List, Optional
+from datetime import datetime
 
 from controllers.admin_controller import AdminController
 from schemas.role_schema import RoleCreate, RoleUpdate, UserRoleUpdate, AVAILABLE_RESOURCES, AVAILABLE_ACTIONS
@@ -190,3 +191,52 @@ async def get_audit_logs(
         page_size=effective_limit
     )
     return result
+
+# ── 4. GESTIÓN DE RESPALDOS (SEGURIDAD EN CÓMPUTO - 24 HORAS) ─────────────────
+@admin_router.post(
+    "/backups/trigger",
+    dependencies=[Depends(require_role("Administrador", "admin"))]
+)
+async def trigger_backup():
+    """Ejecuta un respaldo inmediato de la base de datos hacia la localidad externa segura"""
+    import sys
+    from pathlib import Path
+    scripts_dir = Path(__file__).resolve().parent.parent.parent.parent / "scripts"
+    if str(scripts_dir) not in sys.path:
+        sys.path.insert(0, str(scripts_dir))
+    try:
+        from backup_db import run_backup
+        result = await run_backup()
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Fallo al ejecutar respaldo: {str(e)}")
+
+@admin_router.get(
+    "/backups",
+    dependencies=[Depends(require_role("Administrador", "admin"))]
+)
+async def list_backups():
+    """Lista todos los respaldos generados y almacenados en la localidad externa segura"""
+    from pathlib import Path
+    root_path = Path(__file__).resolve().parent.parent.parent.parent
+    backup_dir = root_path / "backups" / "external_storage"
+    
+    backups = []
+    if backup_dir.exists():
+        for zip_file in sorted(backup_dir.glob("easypay_backup_*.zip"), reverse=True):
+            sha_file = zip_file.with_suffix(".zip.sha256")
+            sha_val = None
+            if sha_file.exists():
+                try:
+                    sha_val = sha_file.read_text(encoding="utf-8").split(" ")[0].strip()
+                except Exception:
+                    pass
+            backups.append({
+                "filename": zip_file.name,
+                "size_bytes": zip_file.stat().st_size,
+                "created_at": datetime.fromtimestamp(zip_file.stat().st_mtime).isoformat(),
+                "sha256": sha_val,
+                "verified": sha_val is not None
+            })
+    return {"status": "success", "count": len(backups), "backups": backups}
+

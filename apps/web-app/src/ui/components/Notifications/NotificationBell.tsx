@@ -286,7 +286,7 @@ export const NotificationBell = () => {
                                                         <div className="flex gap-4">
                                                             <div className={cn(
                                                                 "w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0",
-                                                                n.type === 'GROUP_INVITATION' ? "bg-indigo-600 text-white shadow-md shadow-indigo-600/30" : 
+                                                                n.type === 'GROUP_INVITATION' ? "bg-blue-600 text-white shadow-md shadow-blue-600/30" : 
                                                                 n.type === 'INVITATION_REJECTED' ? "bg-rose-500/10 text-rose-500 border border-rose-500/20" : (
                                                                     !n.read ? "bg-[var(--primary)] text-white shadow-md shadow-[var(--primary)]/20" : "bg-[var(--hover-bg)] text-[var(--text-secondary)]"
                                                                 )

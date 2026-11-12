@@ -32,7 +32,7 @@ const sizeClasses = {
 
 const variantClasses = {
     neutral: 'bg-slate-800/60 text-slate-300 border-white/[0.08]',
-    subtle: 'bg-indigo-500/10 text-indigo-300 border-indigo-500/20',
+    subtle: 'bg-blue-500/10 text-blue-300 border-blue-500/20',
 };
 
 /**

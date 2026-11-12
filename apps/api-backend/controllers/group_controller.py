@@ -115,6 +115,7 @@ class GroupController(BaseController):
         }
         invitation_id = await self._invitation_model.create_invitation(invitation_data)
         invitation_data["id"] = invitation_id
+        invitation_data.pop("_id", None)
 
         # 4. Canal 1: Correo electrónico (despacho síncrono para verificar transporte)
         base_link = origin_url.rstrip("/") if origin_url else "http://localhost:5173"
